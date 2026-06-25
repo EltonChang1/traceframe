@@ -155,11 +155,102 @@ TraceFrame stores project evidence in `.traceframe/`:
 
 JSON metadata is the source of truth. Source-row samples are stored locally as JSON. Chart drilldown data is stored in a local DuckDB database under `.traceframe/source_rows/`.
 
-## Audit report
+## Examples
 
-Run `traceframe report` or `tf.export_report("audit_report.html")` to generate a local HTML audit page with datasets, lineage, metrics, charts, claims, and checks.
+TraceFrame ships with two runnable examples:
 
-![TraceFrame audit report](docs/images/audit-report.png)
+```bash
+# Single-table ecommerce workflow
+cd examples/ecommerce
+traceframe init
+python analysis.py
+
+# Multi-table Olist-inspired marketplace workflow
+cd examples/olist
+traceframe init
+python analysis.py
+```
+
+After running an analysis, inspect the recorded evidence:
+
+```bash
+traceframe status
+traceframe doctor
+traceframe lineage monthly_revenue --direction upstream
+traceframe checks
+traceframe checks --json
+traceframe report
+```
+
+`traceframe status` summarizes what was tracked:
+
+```text
+TraceFrame project: ecommerce_revenue_analysis
+Datasets: 1
+Transformations: 2
+Metrics: 1
+Charts: 1
+Claims: 1
+Checks: 2
+Failed checks: 0
+```
+
+`traceframe doctor` reports project health:
+
+```text
+TraceFrame project: ecommerce_revenue_analysis
+Version: 0.1.0
+Status: ok
+No issues found.
+```
+
+`traceframe lineage` shows how a result was derived:
+
+```text
+Artifact: monthly_revenue
+Direction: upstream
+Nodes: 4
+* monthly_revenue [sql_result]
+- large_orders [transformation]
+- clean_orders [transformation]
+- orders [dataset]
+Edges: 3
+  orders -> clean_orders -> large_orders -> monthly_revenue
+```
+
+The Olist example traces a join across orders, items, and customers:
+
+```text
+Artifact: monthly_revenue_by_state
+  orders -> delivered_orders ─┐
+  order_items -> order_items_tracked ─┼-> monthly_revenue_by_state
+  customers ─────────────────────────┘
+```
+
+`traceframe checks --json` prints check results for scripting or CI:
+
+```json
+{
+  "checks": [
+    {
+      "name": "not_null_total_price",
+      "check_type": "not_null",
+      "passed": true,
+      "severity": "error",
+      "source": "large_orders"
+    },
+    {
+      "name": "unique_order_id",
+      "check_type": "unique",
+      "passed": true,
+      "severity": "error",
+      "source": "large_orders"
+    }
+  ]
+}
+```
+
+`traceframe report` and `tf.export_report("audit_report.html")` write a local HTML audit page with datasets, lineage, metrics, charts, claims, and checks.
 
 ## Verification
 
