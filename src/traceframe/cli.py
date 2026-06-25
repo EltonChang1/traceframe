@@ -13,6 +13,8 @@ from traceframe.project import (
     load_project,
 )
 from traceframe.report import export_report
+from traceframe.source_rows import drilldown as drilldown_rows
+from traceframe.source_rows import export_source_rows
 from traceframe.stale import dataset_status, dataset_statuses
 from traceframe.storage import read_json
 
@@ -97,6 +99,35 @@ def stale() -> None:
             typer.echo(f"  Current hash: {status['current_hash'] or 'unavailable'}")
 
 
+@app.command("source-rows")
+def source_rows_command(
+    artifact_id: str,
+    output: Path | None = typer.Option(None, "--output", "-o"),
+    limit: int | None = typer.Option(None, "--limit", min=1),
+) -> None:
+    try:
+        output_path = export_source_rows(artifact_id, path=output, limit=limit)
+    except (FileNotFoundError, TraceFrameProjectError) as exc:
+        raise typer.Exit(str(exc))
+    typer.echo(f"Exported source rows: {output_path}")
+
+
+@app.command()
+def drilldown(
+    chart_id: str,
+    x: str | None = typer.Option(None, "--x", help="Chart x field to filter."),
+    value: str | None = typer.Option(
+        None, "--value", help="Value to match in the x field."
+    ),
+    limit: int = typer.Option(20, "--limit", min=1),
+) -> None:
+    try:
+        rows = drilldown_rows(chart_id, x=x, value=value, limit=limit)
+    except (FileNotFoundError, TraceFrameProjectError) as exc:
+        raise typer.Exit(str(exc))
+    typer.echo(rows.to_string(index=False))
+
+
 def _records(trace_dir: Path) -> list[dict[str, Any]]:
     data: list[dict[str, Any]] = []
     data.extend(
@@ -129,6 +160,12 @@ def verify(artifact_id: str) -> None:
             for key in ["source", "formula", "x", "y", "file_hash", "chart_spec_path"]:
                 if record.get(key) is not None:
                     typer.echo(f"{key.replace('_', ' ').title()}: {record[key]}")
+            if record.get("source_rows_path"):
+                typer.echo(f"Source Rows: {record['source_rows_path']}")
+            if record.get("drilldown"):
+                typer.echo(
+                    f"Drilldown: {record['drilldown']['database_path']}::{record['drilldown']['table']}"
+                )
             if record.get("file_hash"):
                 status = dataset_status(record)
                 typer.echo(f"Stale Status: {status['status']}")

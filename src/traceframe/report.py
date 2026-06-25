@@ -22,6 +22,36 @@ def _metadata() -> dict[str, Any]:
     runs = read_json(trace_dir / "runs.json", {"runs": []}).get("runs", [])
     cells = read_json(trace_dir / "cell_events.json", {"cells": []}).get("cells", [])
     stale_statuses = dataset_statuses()
+    chart_source_rows = [
+        {
+            "id": artifact.get("id"),
+            "name": artifact.get("name") or artifact.get("title"),
+            "path": artifact.get("source_rows_path"),
+            "kind": "chart",
+        }
+        for artifact in charts
+        if artifact.get("source_rows_path")
+    ]
+    chart_drilldowns = [
+        {
+            "id": chart.get("id"),
+            "name": chart.get("name"),
+            "database_path": chart.get("drilldown", {}).get("database_path"),
+            "table": chart.get("drilldown", {}).get("table"),
+        }
+        for chart in charts
+        if chart.get("drilldown")
+    ]
+    lineage_source_rows = [
+        {
+            "id": node.get("id"),
+            "name": node.get("name"),
+            "path": node.get("metadata", {}).get("source_rows", {}).get("path"),
+            "kind": node.get("type"),
+        }
+        for node in lineage.get("nodes", [])
+        if node.get("metadata", {}).get("source_rows")
+    ]
     return {
         "project": load_project(),
         "datasets": datasets,
@@ -32,6 +62,8 @@ def _metadata() -> dict[str, Any]:
         "runs": runs,
         "cells": cells,
         "stale_statuses": stale_statuses,
+        "source_row_artifacts": [*lineage_source_rows, *chart_source_rows],
+        "chart_drilldowns": chart_drilldowns,
         "summary": {
             "datasets": len(datasets),
             "transformations": sum(

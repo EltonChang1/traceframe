@@ -9,6 +9,7 @@ from traceframe.evidence import EvidenceRecord, artifact_id, utc_now
 from traceframe.lineage import add_edge, add_node
 from traceframe.profiler import profile_dataframe
 from traceframe.runs import current_run_id, evidence_metadata
+from traceframe.source_rows import sample_dataframe
 from traceframe.tracking import (
     artifact_for_name,
     register_object,
@@ -46,7 +47,8 @@ def sql(query: str, name: str) -> pd.DataFrame:
     result = conn.execute(query).fetchdf()
     result_id = artifact_id("sql", name)
     profile = profile_dataframe(result)
-    add_node(result_id, "sql_result", name, profile)
+    source_rows = sample_dataframe(result, result_id)
+    add_node(result_id, "sql_result", name, {**profile, "source_rows": source_rows})
 
     source_ids: list[str] = []
     for source_name in _query_sources(query):
@@ -65,7 +67,7 @@ def sql(query: str, name: str) -> pd.DataFrame:
         row_count_after=profile["row_count"],
         columns=list(profile["schema"].keys()),
         sql=query,
-        metadata={**profile, **evidence_metadata()},
+        metadata={**profile, "source_rows": source_rows, **evidence_metadata()},
     )
     write_evidence(record)
     register_object(name, result, result_id)

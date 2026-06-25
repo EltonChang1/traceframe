@@ -7,7 +7,7 @@ from traceframe.evidence import utc_now
 from traceframe.storage import read_json, write_json
 
 TRACEFRAME_DIR = ".traceframe"
-TRACEFRAME_VERSION = "0.2.0"
+TRACEFRAME_VERSION = "0.3.0"
 
 DEFAULT_FILES: dict[str, dict[str, Any]] = {
     "data_manifest.json": {"datasets": []},

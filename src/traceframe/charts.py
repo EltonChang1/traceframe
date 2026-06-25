@@ -9,6 +9,7 @@ import pandas as pd
 from traceframe.evidence import EvidenceRecord, artifact_id, utc_now
 from traceframe.project import get_traceframe_dir
 from traceframe.runs import current_run_id, evidence_metadata
+from traceframe.source_rows import register_chart_drilldown, sample_dataframe
 from traceframe.storage import append_record, write_json
 from traceframe.tracking import write_evidence
 
@@ -43,6 +44,8 @@ def chart(
     spec = chart_obj.to_dict()
     spec_path = trace_dir / "audit_logs" / f"{chart_id}_vegalite.json"
     write_json(spec_path, spec)
+    source_rows = sample_dataframe(data, chart_id)
+    drilldown = register_chart_drilldown(chart_id, data)
 
     record = {
         "id": chart_id,
@@ -57,6 +60,8 @@ def chart(
         "chart_spec_path": str(Path(spec_path)),
         "created_at": utc_now(),
         "run_id": current_run_id(),
+        "source_rows_path": source_rows["path"],
+        "drilldown": drilldown,
     }
     append_record(trace_dir / "charts.json", "charts", record)
     evidence = EvidenceRecord(
@@ -73,6 +78,8 @@ def chart(
             "y": y,
             "title": title,
             "source": source_name,
+            "source_rows": source_rows,
+            "drilldown": drilldown,
             **evidence_metadata(),
         },
     )

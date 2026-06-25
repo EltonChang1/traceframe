@@ -31,6 +31,8 @@ clean = tf.track(
     operation="drop_duplicates(order_id)",
 )
 
+large_orders = tf.filter_rows(clean, "total_price >= 100", name="large_orders")
+
 tf.metric("revenue", "SUM(total_price)", source="clean_orders")
 
 monthly = tf.sql("""
@@ -52,6 +54,8 @@ traceframe init
 traceframe profile data/orders.csv
 traceframe status
 traceframe stale
+traceframe source-rows orders
+traceframe drilldown monthly_revenue_chart --x month --value 2026-01
 traceframe report
 traceframe verify monthly_revenue
 ```
@@ -66,6 +70,20 @@ tf.note_cell(cell_id="metric-cell", execution_count=7, tags=["metric"])
 ```
 
 Artifacts created after `tf.note_cell(...)` include that cell context in their evidence metadata.
+
+## Source Rows and Drilldown
+
+TraceFrame stores small local source-row samples for tracked datasets, transformations, SQL results, and charts. Export them with:
+
+```bash
+traceframe source-rows clean_orders --limit 10
+```
+
+Charts also store their backing data in a local DuckDB file for point inspection:
+
+```python
+tf.drilldown("monthly_revenue_chart", x="month", value="2026-01")
+```
 
 ## Report screenshot
 

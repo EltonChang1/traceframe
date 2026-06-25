@@ -20,9 +20,15 @@
 - Manual stale dataset warnings
 - Richer static audit report
 
+## v0.3
+
+- Source-row sampling
+- Source-row export
+- Explicit filter tracking
+- DuckDB-backed chart drilldown
+
 ## Later
 
-- Source-row evidence
 - Native Polars support
 - Data quality checks
 - Optional local-safe AI assistance

@@ -11,10 +11,16 @@ clean_orders = tf.track(
     operation="drop_duplicates(order_id)",
 )
 
+large_orders = tf.filter_rows(
+    clean_orders,
+    "total_price >= 100",
+    name="large_orders",
+)
+
 tf.metric(
     name="revenue",
     formula="SUM(total_price)",
-    source="clean_orders",
+    source="large_orders",
     description="Total order revenue after duplicate order IDs are removed.",
 )
 
@@ -24,7 +30,7 @@ monthly = tf.sql(
         strftime('%Y-%m', CAST(order_date AS DATE)) AS month,
         SUM(total_price) AS revenue,
         COUNT(*) AS order_count
-    FROM clean_orders
+    FROM large_orders
     GROUP BY 1
     ORDER BY 1
 """,

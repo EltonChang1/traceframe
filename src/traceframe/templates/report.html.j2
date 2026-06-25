@@ -153,11 +153,40 @@
 
   <h2>Chart Evidence</h2>
   <table>
-    <tr><th>Name</th><th>Kind</th><th>X</th><th>Y</th><th>Run</th><th>Spec</th></tr>
+    <tr><th>Name</th><th>Kind</th><th>X</th><th>Y</th><th>Run</th><th>Spec</th><th>Drilldown</th></tr>
     {% for chart in charts %}
-    <tr><td>{{ chart.name }}</td><td>{{ chart.kind }}</td><td>{{ chart.x }}</td><td>{{ chart.y }}</td><td><code>{{ chart.run_id or "" }}</code></td><td><code>{{ chart.chart_spec_path }}</code></td></tr>
+    <tr>
+      <td>{{ chart.name }}</td>
+      <td>{{ chart.kind }}</td>
+      <td>{{ chart.x }}</td>
+      <td>{{ chart.y }}</td>
+      <td><code>{{ chart.run_id or "" }}</code></td>
+      <td><code>{{ chart.chart_spec_path }}</code></td>
+      <td><code>{{ chart.drilldown.table if chart.drilldown else "" }}</code></td>
+    </tr>
     {% else %}
-    <tr><td colspan="6">No charts registered.</td></tr>
+    <tr><td colspan="7">No charts registered.</td></tr>
+    {% endfor %}
+  </table>
+
+  <h2>Source Rows</h2>
+  <p class="section-note">Samples are stored locally and can be exported with <code>traceframe source-rows ARTIFACT</code>.</p>
+  <table>
+    <tr><th>Artifact</th><th>Type</th><th>Sample file</th></tr>
+    {% for artifact in source_row_artifacts %}
+    <tr><td>{{ artifact.name }}</td><td>{{ artifact.kind }}</td><td><code>{{ artifact.path }}</code></td></tr>
+    {% else %}
+    <tr><td colspan="3">No source-row samples recorded.</td></tr>
+    {% endfor %}
+  </table>
+
+  <h2>Chart Drilldowns</h2>
+  <table>
+    <tr><th>Chart</th><th>DuckDB file</th><th>Table</th></tr>
+    {% for drilldown in chart_drilldowns %}
+    <tr><td>{{ drilldown.name }}</td><td><code>{{ drilldown.database_path }}</code></td><td><code>{{ drilldown.table }}</code></td></tr>
+    {% else %}
+    <tr><td colspan="3">No chart drilldown tables recorded.</td></tr>
     {% endfor %}
   </table>
 

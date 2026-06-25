@@ -10,6 +10,7 @@ from traceframe.lineage import add_node
 from traceframe.profiler import profile_dataframe
 from traceframe.project import get_traceframe_dir
 from traceframe.runs import current_run_id, evidence_metadata
+from traceframe.source_rows import sample_dataframe
 from traceframe.storage import append_record, write_json
 from traceframe.tracking import register_object
 
@@ -23,6 +24,7 @@ def _register_dataset(df: pd.DataFrame, path: str | Path, name: str) -> None:
     dataset_id = artifact_id("ds", name)
     file_hash = sha256_file(path)
     profile = profile_dataframe(df)
+    source_rows = sample_dataframe(df, dataset_id)
     record = {
         "id": dataset_id,
         "name": name,
@@ -35,9 +37,11 @@ def _register_dataset(df: pd.DataFrame, path: str | Path, name: str) -> None:
         "duplicate_rows": profile["duplicate_rows"],
         "created_at": utc_now(),
         "run_id": current_run_id(),
+        "source_rows_path": source_rows["path"],
+        "source_rows_sample_size": source_rows["sample_size"],
     }
     append_record(trace_dir / "data_manifest.json", "datasets", record)
-    add_node(dataset_id, "dataset", name, profile)
+    add_node(dataset_id, "dataset", name, {**profile, "source_rows": source_rows})
     evidence = EvidenceRecord(
         id=dataset_id,
         artifact_type="dataset",
@@ -47,7 +51,12 @@ def _register_dataset(df: pd.DataFrame, path: str | Path, name: str) -> None:
         file_hashes=[file_hash],
         row_count_after=profile["row_count"],
         columns=list(profile["schema"].keys()),
-        metadata={"path": str(path), **profile, **evidence_metadata()},
+        metadata={
+            "path": str(path),
+            "source_rows": source_rows,
+            **profile,
+            **evidence_metadata(),
+        },
     )
     write_json(
         trace_dir / "audit_logs" / f"{dataset_id}.json", record_to_dict(evidence)
