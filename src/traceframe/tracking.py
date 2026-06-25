@@ -18,6 +18,12 @@ _artifact_ids: dict[str, str] = {}
 _object_names: dict[int, str] = {}
 
 
+def reset_tracking() -> None:
+    _tracked_objects.clear()
+    _artifact_ids.clear()
+    _object_names.clear()
+
+
 def tracked_objects() -> dict[str, Any]:
     return dict(_tracked_objects)
 

@@ -18,6 +18,7 @@ from traceframe.source_rows import drilldown, export_source_rows
 from traceframe.sql import sql
 from traceframe.stale import dataset_statuses, stale_datasets
 from traceframe.tracking import filter_rows, track
+from traceframe.version import __version__
 
 __all__ = [
     "chart",
@@ -44,4 +45,5 @@ __all__ = [
     "sql",
     "start",
     "track",
+    "__version__",
 ]

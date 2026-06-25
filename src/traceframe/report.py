@@ -6,6 +6,8 @@ from typing import Any
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 from traceframe.assistant import LOCAL_PRIVACY_NOTICE
+from traceframe.diagnostics import project_health
+from traceframe.evidence import utc_now
 from traceframe.project import get_traceframe_dir, load_project
 from traceframe.stale import dataset_statuses
 from traceframe.storage import read_json
@@ -67,6 +69,8 @@ def _metadata() -> dict[str, Any]:
         "checks": checks,
         "assistant_plans": assistant_plans,
         "assistant_privacy_notice": LOCAL_PRIVACY_NOTICE,
+        "generated_at": utc_now(),
+        "health": project_health(),
         "runs": runs,
         "cells": cells,
         "stale_statuses": stale_statuses,

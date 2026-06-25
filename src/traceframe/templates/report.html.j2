@@ -49,7 +49,7 @@
 <main>
   <header>
     <h1>TraceFrame Audit Report</h1>
-    <p class="muted">Project: {{ project.project_name }} · TraceFrame {{ project.traceframe_version }}</p>
+    <p class="muted">Project: {{ project.project_name }} · TraceFrame {{ project.traceframe_version }} · Generated {{ generated_at }}</p>
     <div class="summary">
       <div class="stat"><strong>{{ summary.datasets }}</strong><span>Datasets</span></div>
       <div class="stat"><strong>{{ summary.transformations }}</strong><span>Transformations</span></div>
@@ -61,6 +61,20 @@
       <div class="stat"><strong>{{ summary.warnings }}</strong><span>Stale warnings</span></div>
     </div>
   </header>
+
+  <h2>Project Health</h2>
+  <table>
+    <tr><th>Status</th><th>Issues</th></tr>
+    <tr><td><span class="status {{ 'ok' if health.status == 'ok' else 'stale' }}">{{ health.status }}</span></td><td>{{ health.issue_count }}</td></tr>
+  </table>
+  <table>
+    <tr><th>Severity</th><th>Type</th><th>Message</th></tr>
+    {% for issue in health.issues %}
+    <tr><td>{{ issue.severity }}</td><td>{{ issue.type }}</td><td>{{ issue.message }}</td></tr>
+    {% else %}
+    <tr><td colspan="3">No issues found.</td></tr>
+    {% endfor %}
+  </table>
 
   <h2>Run Context</h2>
   <table>

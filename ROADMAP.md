@@ -50,6 +50,14 @@
 - Assistant plan evidence records
 - No external API calls by default
 
+## v1.0
+
+- Stable local Python API
+- Stronger report health summary
+- `traceframe doctor` project diagnostics
+- Pandas + DuckDB + Polars end-to-end workflow tests
+- Expanded examples and documentation
+
 ## Later
 
 - Stable API hardening

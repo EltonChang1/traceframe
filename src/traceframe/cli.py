@@ -6,6 +6,7 @@ from typing import Any
 import typer
 
 from traceframe.assistant import LOCAL_PRIVACY_NOTICE, plan_analysis
+from traceframe.diagnostics import project_health
 from traceframe.profiler import profile_csv
 from traceframe.project import (
     TraceFrameProjectError,
@@ -184,6 +185,23 @@ def assist(
     for index, step in enumerate(plan["steps"], start=1):
         typer.echo(f"{index}. {step['title']}")
         typer.echo(step["code"])
+
+
+@app.command()
+def doctor() -> None:
+    try:
+        health = project_health()
+    except TraceFrameProjectError as exc:
+        raise typer.Exit(str(exc))
+
+    typer.echo(f"TraceFrame project: {health['project_name']}")
+    typer.echo(f"Version: {health['traceframe_version']}")
+    typer.echo(f"Status: {health['status']}")
+    if not health["issues"]:
+        typer.echo("No issues found.")
+        return
+    for issue in health["issues"]:
+        typer.echo(f"{issue['severity']}: {issue['type']} - {issue['message']}")
 
 
 def _records(trace_dir: Path) -> list[dict[str, Any]]:

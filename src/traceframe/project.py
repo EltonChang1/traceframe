@@ -5,9 +5,10 @@ from typing import Any
 
 from traceframe.evidence import utc_now
 from traceframe.storage import read_json, write_json
+from traceframe.version import __version__
 
 TRACEFRAME_DIR = ".traceframe"
-TRACEFRAME_VERSION = "0.6.0"
+TRACEFRAME_VERSION = __version__
 
 DEFAULT_FILES: dict[str, dict[str, Any]] = {
     "data_manifest.json": {"datasets": []},
@@ -60,10 +61,12 @@ def init_project(path: str | Path = ".", project_name: str = "traceframe") -> Pa
 
 def start(project_name: str, notebook_name: str | None = None) -> Path:
     from traceframe.runs import start_run
+    from traceframe.tracking import reset_tracking
 
     global _active_project_root
     trace_dir = init_project(".", project_name)
     _active_project_root = trace_dir.parent
+    reset_tracking()
     start_run(project_name, notebook_name=notebook_name)
     return trace_dir
 

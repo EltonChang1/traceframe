@@ -36,3 +36,8 @@ See `README.md` for the initial API.
 - `tf.plan_analysis(request, data_paths=None, local_llm_command=None)` creates local assistant plan records.
 - `traceframe assist "request" --data orders.csv` prints and stores a local plan.
 - `--local-llm-command` is optional and runs only the command you provide.
+
+## v1.0 additions
+
+- `traceframe doctor` reports project health diagnostics.
+- `traceframe.__version__` exposes the package version.
