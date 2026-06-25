@@ -37,3 +37,6 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 traceframe = ["templates/*.j2"]
+
+[tool.mypy]
+disable_error_code = ["import-untyped"]

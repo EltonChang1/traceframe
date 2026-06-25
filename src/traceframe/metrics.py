@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from traceframe.evidence import EvidenceRecord, artifact_id, utc_now
 from traceframe.project import get_traceframe_dir
 from traceframe.runs import current_run_id, evidence_metadata
@@ -9,9 +11,9 @@ from traceframe.tracking import artifact_for_name, write_evidence
 
 def metric(
     name: str, formula: str, source: str, description: str | None = None
-) -> dict[str, str | None]:
+) -> dict[str, Any]:
     metric_id = artifact_id("metric", name)
-    record = {
+    record: dict[str, Any] = {
         "id": metric_id,
         "name": name,
         "formula": formula,

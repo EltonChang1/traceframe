@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
+from typing import Literal, TypeAlias
 
 import pandas as pd
 import polars as pl
@@ -21,7 +21,7 @@ def _dataset_name(path: str | Path, name: str | None) -> str:
     return name or Path(path).stem
 
 
-TableLike = pd.DataFrame | pl.DataFrame | pl.LazyFrame
+TableLike: TypeAlias = pd.DataFrame | pl.DataFrame | pl.LazyFrame
 
 
 def _register_dataset(df: TableLike, path: str | Path, name: str) -> None:
@@ -102,8 +102,14 @@ def read_parquet(
 
 
 def scan_csv(path: str | Path, name: str | None = None) -> pl.LazyFrame:
-    return read_csv(path, name=name, engine="polars", lazy=True)  # type: ignore[return-value]
+    result = read_csv(path, name=name, engine="polars", lazy=True)
+    if not isinstance(result, pl.LazyFrame):
+        raise TypeError("Expected a Polars LazyFrame from scan_csv.")
+    return result
 
 
 def scan_parquet(path: str | Path, name: str | None = None) -> pl.LazyFrame:
-    return read_parquet(path, name=name, engine="polars", lazy=True)  # type: ignore[return-value]
+    result = read_parquet(path, name=name, engine="polars", lazy=True)
+    if not isinstance(result, pl.LazyFrame):
+        raise TypeError("Expected a Polars LazyFrame from scan_parquet.")
+    return result

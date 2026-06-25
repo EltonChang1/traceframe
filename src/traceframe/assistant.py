@@ -128,7 +128,7 @@ def plan_analysis(
         if local_llm_command
         else _heuristic_steps(request, paths)
     )
-    plan = {
+    plan: dict[str, Any] = {
         "id": plan_id,
         "request": request,
         "mode": mode,

@@ -23,6 +23,11 @@ from traceframe.storage import read_json
 app = typer.Typer(help="Local-first evidence tracking for data science.")
 
 
+def _exit_with_error(exc: Exception | str) -> None:
+    typer.echo(str(exc))
+    raise typer.Exit(1)
+
+
 @app.command()
 def init(
     project_name: str = typer.Option(
@@ -51,7 +56,7 @@ def status() -> None:
         trace_dir = get_traceframe_dir()
         project = load_project()
     except TraceFrameProjectError as exc:
-        raise typer.Exit(str(exc))
+        _exit_with_error(exc)
 
     datasets = read_json(trace_dir / "data_manifest.json", {"datasets": []}).get(
         "datasets", []
@@ -96,7 +101,7 @@ def stale() -> None:
     try:
         statuses = dataset_statuses()
     except TraceFrameProjectError as exc:
-        raise typer.Exit(str(exc))
+        _exit_with_error(exc)
 
     if not statuses:
         typer.echo("No datasets tracked.")
@@ -118,7 +123,7 @@ def source_rows_command(
     try:
         output_path = export_source_rows(artifact_id, path=output, limit=limit)
     except (FileNotFoundError, TraceFrameProjectError) as exc:
-        raise typer.Exit(str(exc))
+        _exit_with_error(exc)
     typer.echo(f"Exported source rows: {output_path}")
 
 
@@ -134,7 +139,7 @@ def drilldown(
     try:
         rows = drilldown_rows(chart_id, x=x, value=value, limit=limit)
     except (FileNotFoundError, TraceFrameProjectError) as exc:
-        raise typer.Exit(str(exc))
+        _exit_with_error(exc)
     typer.echo(rows.to_string(index=False))
 
 
@@ -143,7 +148,7 @@ def checks_command(failed_only: bool = typer.Option(False, "--failed-only")) -> 
     try:
         trace_dir = get_traceframe_dir()
     except TraceFrameProjectError as exc:
-        raise typer.Exit(str(exc))
+        _exit_with_error(exc)
     checks = read_json(trace_dir / "checks.json", {"checks": []}).get("checks", [])
     if failed_only:
         checks = [check for check in checks if not check.get("passed")]
@@ -178,7 +183,7 @@ def assist(
             local_llm_command=local_llm_command,
         )
     except Exception as exc:
-        raise typer.Exit(str(exc))
+        _exit_with_error(exc)
 
     typer.echo(LOCAL_PRIVACY_NOTICE)
     typer.echo(f"Plan: {plan['id']} ({plan['mode']})")
@@ -192,7 +197,7 @@ def doctor() -> None:
     try:
         health = project_health()
     except TraceFrameProjectError as exc:
-        raise typer.Exit(str(exc))
+        _exit_with_error(exc)
 
     typer.echo(f"TraceFrame project: {health['project_name']}")
     typer.echo(f"Version: {health['traceframe_version']}")
@@ -229,7 +234,7 @@ def verify(artifact_id: str) -> None:
     try:
         trace_dir = get_traceframe_dir()
     except TraceFrameProjectError as exc:
-        raise typer.Exit(str(exc))
+        _exit_with_error(exc)
 
     for record in _records(trace_dir):
         if artifact_id in {record.get("id"), record.get("name"), record.get("title")}:
@@ -259,7 +264,7 @@ def verify(artifact_id: str) -> None:
                     f"Evidence file: {trace_dir / 'audit_logs' / f'{evidence_id}.json'}"
                 )
             return
-    raise typer.Exit(f"Artifact not found: {artifact_id}")
+    _exit_with_error(f"Artifact not found: {artifact_id}")
 
 
 def _record_type(record: dict[str, Any]) -> str:
