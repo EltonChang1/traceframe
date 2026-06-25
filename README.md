@@ -1,5 +1,9 @@
 # TraceFrame
 
+[![Test](https://github.com/EltonChang1/traceframe/actions/workflows/test.yml/badge.svg)](https://github.com/EltonChang1/traceframe/actions/workflows/test.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 TraceFrame is a local-first evidence tracker for data science workflows. It records datasets, transformations, SQL outputs, metrics, charts, claims, checks, source-row samples, and lineage under a project-local `.traceframe/` directory.
 
 No cloud service, telemetry, or external API call is used by default.
@@ -172,5 +176,6 @@ TraceFrame is released under the [MIT License](LICENSE).
 - [Getting started](docs/getting-started.md)
 - [API reference](docs/api-reference.md)
 - [Evidence model](docs/evidence-model.md)
+- [Changelog](CHANGELOG.md)
 - [Roadmap](ROADMAP.md)
 - [Contributing](CONTRIBUTING.md)
