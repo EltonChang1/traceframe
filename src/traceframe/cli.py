@@ -146,7 +146,10 @@ def drilldown(
 
 
 @app.command("checks")
-def checks_command(failed_only: bool = typer.Option(False, "--failed-only")) -> None:
+def checks_command(
+    failed_only: bool = typer.Option(False, "--failed-only"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
     try:
         trace_dir = get_traceframe_dir()
     except TraceFrameProjectError as exc:
@@ -154,6 +157,9 @@ def checks_command(failed_only: bool = typer.Option(False, "--failed-only")) -> 
     checks = read_json(trace_dir / "checks.json", {"checks": []}).get("checks", [])
     if failed_only:
         checks = [check for check in checks if not check.get("passed")]
+    if json_output:
+        typer.echo(json.dumps({"checks": checks}, indent=2, sort_keys=True))
+        return
     if not checks:
         typer.echo("No checks recorded.")
         return

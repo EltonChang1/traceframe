@@ -125,6 +125,7 @@ traceframe lineage monthly_revenue --json --include-metadata
 traceframe source-rows clean_orders --limit 10
 traceframe drilldown monthly_chart --x month --value 2026-01
 traceframe checks --failed-only
+traceframe checks --json
 traceframe assist "Build monthly revenue evidence" --data orders.csv
 traceframe doctor
 traceframe report
@@ -153,6 +154,12 @@ TraceFrame stores project evidence in `.traceframe/`:
 ```
 
 JSON metadata is the source of truth. Source-row samples are stored locally as JSON. Chart drilldown data is stored in a local DuckDB database under `.traceframe/source_rows/`.
+
+## Audit report
+
+Run `traceframe report` or `tf.export_report("audit_report.html")` to generate a local HTML audit page with datasets, lineage, metrics, charts, claims, and checks.
+
+![TraceFrame audit report](docs/images/audit-report.png)
 
 ## Verification
 

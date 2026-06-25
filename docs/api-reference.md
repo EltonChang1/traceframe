@@ -41,6 +41,7 @@ See `README.md` for the initial API.
 
 - `traceframe doctor` reports project health diagnostics.
 - `traceframe.__version__` exposes the package version.
+- `traceframe checks --json` prints recorded checks as JSON for scripting and CI integration.
 
 ## v2 additions
 

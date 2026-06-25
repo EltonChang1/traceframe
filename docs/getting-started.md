@@ -58,6 +58,8 @@ Open `ecommerce_audit_report.html` or the generated report in a browser to revie
 
 For notebook context, pass `notebook_name=` to `tf.start(...)` and call `tf.note_cell(...)` before important cells.
 
+See also `examples/olist/` for a multi-table marketplace workflow inspired by the Olist dataset.
+
 ## Next steps
 
 - [API reference](api-reference.md)
