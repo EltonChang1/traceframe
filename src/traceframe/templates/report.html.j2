@@ -4,28 +4,107 @@
   <meta charset="utf-8">
   <title>TraceFrame Audit Report</title>
   <style>
-    body { color: #1f2937; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.5; margin: 0; }
-    main { margin: 0 auto; max-width: 960px; padding: 32px 20px 56px; }
-    h1, h2 { color: #111827; }
-    table { border-collapse: collapse; margin: 12px 0 28px; width: 100%; }
-    th, td { border-bottom: 1px solid #e5e7eb; padding: 8px; text-align: left; vertical-align: top; }
-    th { background: #f9fafb; font-weight: 600; }
-    code { background: #f3f4f6; border-radius: 4px; padding: 2px 4px; }
-    .muted { color: #6b7280; }
+    :root {
+      color-scheme: light;
+      --ink: #1d2733;
+      --muted: #647184;
+      --line: #d9e0e8;
+      --soft: #f6f8fb;
+      --panel: #ffffff;
+      --accent: #1b7f7a;
+      --warn: #a15c00;
+      --bad: #b42318;
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: #eef3f7;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+      margin: 0;
+    }
+    main { margin: 0 auto; max-width: 1120px; padding: 32px 20px 56px; }
+    header { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 24px; }
+    h1, h2, h3 { color: #111827; letter-spacing: 0; margin: 0; }
+    h1 { font-size: 32px; }
+    h2 { font-size: 21px; margin: 32px 0 12px; }
+    h3 { font-size: 16px; margin: 18px 0 8px; }
+    p { margin: 8px 0; }
+    table { background: var(--panel); border: 1px solid var(--line); border-collapse: collapse; width: 100%; }
+    th, td { border-bottom: 1px solid var(--line); padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { background: var(--soft); font-size: 13px; font-weight: 700; }
+    code { background: #edf1f5; border-radius: 4px; padding: 2px 4px; word-break: break-word; }
+    .muted { color: var(--muted); }
+    .summary { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-top: 18px; }
+    .stat { background: var(--soft); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+    .stat strong { display: block; font-size: 24px; line-height: 1.1; }
+    .status { border-radius: 999px; display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; }
+    .ok { background: #e7f6ef; color: #067647; }
+    .stale { background: #fff4df; color: var(--warn); }
+    .missing { background: #fdecec; color: var(--bad); }
+    .section-note { color: var(--muted); margin-bottom: 12px; }
   </style>
 </head>
 <body>
 <main>
-  <h1>TraceFrame Audit Report</h1>
-  <p class="muted">Project: {{ project.project_name }}</p>
+  <header>
+    <h1>TraceFrame Audit Report</h1>
+    <p class="muted">Project: {{ project.project_name }} · TraceFrame {{ project.traceframe_version }}</p>
+    <div class="summary">
+      <div class="stat"><strong>{{ summary.datasets }}</strong><span>Datasets</span></div>
+      <div class="stat"><strong>{{ summary.transformations }}</strong><span>Transformations</span></div>
+      <div class="stat"><strong>{{ summary.metrics }}</strong><span>Metrics</span></div>
+      <div class="stat"><strong>{{ summary.charts }}</strong><span>Charts</span></div>
+      <div class="stat"><strong>{{ summary.claims }}</strong><span>Claims</span></div>
+      <div class="stat"><strong>{{ summary.warnings }}</strong><span>Stale warnings</span></div>
+    </div>
+  </header>
+
+  <h2>Run Context</h2>
+  <table>
+    <tr><th>Run ID</th><th>Started</th><th>Context</th><th>Notebook</th><th>Script</th></tr>
+    {% for run in runs %}
+    <tr>
+      <td><code>{{ run.id }}</code></td>
+      <td>{{ run.started_at }}</td>
+      <td>{{ run.context.kind }}</td>
+      <td>{{ run.context.notebook_name or "" }}</td>
+      <td><code>{{ run.context.script_path or "" }}</code></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5">No run context recorded.</td></tr>
+    {% endfor %}
+  </table>
+
+  <h2>Stale Checks</h2>
+  <p class="section-note">TraceFrame compares stored dataset hashes with the current local files when this report is generated.</p>
+  <table>
+    <tr><th>Dataset</th><th>Status</th><th>Path</th><th>Message</th></tr>
+    {% for status in stale_statuses %}
+    <tr>
+      <td>{{ status.name }}</td>
+      <td><span class="status {{ status.status }}">{{ status.status }}</span></td>
+      <td><code>{{ status.path }}</code></td>
+      <td>{{ status.message }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4">No datasets tracked.</td></tr>
+    {% endfor %}
+  </table>
 
   <h2>Dataset Manifest</h2>
   <table>
-    <tr><th>Name</th><th>Rows</th><th>Columns</th><th>Hash</th></tr>
+    <tr><th>Name</th><th>Rows</th><th>Columns</th><th>Run</th><th>Hash</th></tr>
     {% for dataset in datasets %}
-    <tr><td>{{ dataset.name }}</td><td>{{ dataset.row_count }}</td><td>{{ dataset.column_count }}</td><td><code>{{ dataset.file_hash }}</code></td></tr>
+    <tr>
+      <td>{{ dataset.name }}</td>
+      <td>{{ dataset.row_count }}</td>
+      <td>{{ dataset.column_count }}</td>
+      <td><code>{{ dataset.run_id or "" }}</code></td>
+      <td><code>{{ dataset.file_hash }}</code></td>
+    </tr>
     {% else %}
-    <tr><td colspan="4">No datasets tracked.</td></tr>
+    <tr><td colspan="5">No datasets tracked.</td></tr>
     {% endfor %}
   </table>
 
@@ -52,40 +131,58 @@
     <tr><td colspan="3">No lineage nodes tracked.</td></tr>
     {% endfor %}
   </table>
+  <h3>Edges</h3>
+  <table>
+    <tr><th>From</th><th>To</th><th>Type</th></tr>
+    {% for edge in lineage.edges %}
+    <tr><td><code>{{ edge.from }}</code></td><td><code>{{ edge.to }}</code></td><td>{{ edge.type }}</td></tr>
+    {% else %}
+    <tr><td colspan="3">No lineage edges tracked.</td></tr>
+    {% endfor %}
+  </table>
 
   <h2>Metrics</h2>
   <table>
-    <tr><th>Name</th><th>Formula</th><th>Source</th><th>Description</th></tr>
+    <tr><th>Name</th><th>Formula</th><th>Source</th><th>Run</th><th>Description</th></tr>
     {% for metric in metrics %}
-    <tr><td>{{ metric.name }}</td><td><code>{{ metric.formula }}</code></td><td>{{ metric.source }}</td><td>{{ metric.description or "" }}</td></tr>
+    <tr><td>{{ metric.name }}</td><td><code>{{ metric.formula }}</code></td><td>{{ metric.source }}</td><td><code>{{ metric.run_id or "" }}</code></td><td>{{ metric.description or "" }}</td></tr>
     {% else %}
-    <tr><td colspan="4">No metrics registered.</td></tr>
+    <tr><td colspan="5">No metrics registered.</td></tr>
     {% endfor %}
   </table>
 
   <h2>Chart Evidence</h2>
   <table>
-    <tr><th>Name</th><th>Kind</th><th>X</th><th>Y</th><th>Spec</th></tr>
+    <tr><th>Name</th><th>Kind</th><th>X</th><th>Y</th><th>Run</th><th>Spec</th></tr>
     {% for chart in charts %}
-    <tr><td>{{ chart.name }}</td><td>{{ chart.kind }}</td><td>{{ chart.x }}</td><td>{{ chart.y }}</td><td><code>{{ chart.chart_spec_path }}</code></td></tr>
+    <tr><td>{{ chart.name }}</td><td>{{ chart.kind }}</td><td>{{ chart.x }}</td><td>{{ chart.y }}</td><td><code>{{ chart.run_id or "" }}</code></td><td><code>{{ chart.chart_spec_path }}</code></td></tr>
     {% else %}
-    <tr><td colspan="5">No charts registered.</td></tr>
+    <tr><td colspan="6">No charts registered.</td></tr>
     {% endfor %}
   </table>
 
   <h2>Claims</h2>
   <table>
-    <tr><th>Claim</th><th>Supports</th><th>Confidence</th></tr>
+    <tr><th>Claim</th><th>Supports</th><th>Confidence</th><th>Run</th></tr>
     {% for claim in claims %}
-    <tr><td>{{ claim.text }}</td><td>{{ claim.supports | join(", ") }}</td><td>{{ claim.confidence or "" }}</td></tr>
+    <tr><td>{{ claim.text }}</td><td>{{ claim.supports | join(", ") }}</td><td>{{ claim.confidence or "" }}</td><td><code>{{ claim.run_id or "" }}</code></td></tr>
     {% else %}
-    <tr><td colspan="3">No claims registered.</td></tr>
+    <tr><td colspan="4">No claims registered.</td></tr>
+    {% endfor %}
+  </table>
+
+  <h2>Notebook Cell Notes</h2>
+  <table>
+    <tr><th>Run</th><th>Cell ID</th><th>Execution</th><th>Source Hash</th><th>Tags</th></tr>
+    {% for cell in cells %}
+    <tr><td><code>{{ cell.run_id }}</code></td><td>{{ cell.cell_id or "" }}</td><td>{{ cell.execution_count or "" }}</td><td><code>{{ cell.source_hash or "" }}</code></td><td>{{ cell.tags | join(", ") }}</td></tr>
+    {% else %}
+    <tr><td colspan="5">No notebook cell notes recorded.</td></tr>
     {% endfor %}
   </table>
 
   <h2>Reproducibility</h2>
-  <p>Run the analysis script from the project root, then regenerate this report with <code>traceframe report</code>.</p>
+  <p>Run the analysis script or notebook from the project root, then regenerate this report with <code>traceframe report</code>. Use <code>traceframe stale</code> before relying on old evidence.</p>
 </main>
 </body>
 </html>
-

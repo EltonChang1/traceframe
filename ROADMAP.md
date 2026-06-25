@@ -12,11 +12,17 @@
 - Static HTML report
 - Artifact verification
 
+## v0.2
+
+- Lightweight run metadata
+- Best-effort notebook context detection
+- Manual notebook cell notes
+- Manual stale dataset warnings
+- Richer static audit report
+
 ## Later
 
-- Better notebook support
 - Source-row evidence
 - Native Polars support
 - Data quality checks
 - Optional local-safe AI assistance
-

@@ -8,7 +8,13 @@ import pandas as pd
 from traceframe.evidence import EvidenceRecord, artifact_id, utc_now
 from traceframe.lineage import add_edge, add_node
 from traceframe.profiler import profile_dataframe
-from traceframe.tracking import artifact_for_name, register_object, tracked_objects, write_evidence
+from traceframe.runs import current_run_id, evidence_metadata
+from traceframe.tracking import (
+    artifact_for_name,
+    register_object,
+    tracked_objects,
+    write_evidence,
+)
 
 _connection: duckdb.DuckDBPyConnection | None = None
 
@@ -25,7 +31,9 @@ def register_table(name: str, df: pd.DataFrame) -> None:
 
 
 def _query_sources(query: str) -> list[str]:
-    names = re.findall(r"\b(?:from|join)\s+([a-zA-Z_][a-zA-Z0-9_]*)", query, flags=re.IGNORECASE)
+    names = re.findall(
+        r"\b(?:from|join)\s+([a-zA-Z_][a-zA-Z0-9_]*)", query, flags=re.IGNORECASE
+    )
     return list(dict.fromkeys(names))
 
 
@@ -52,13 +60,13 @@ def sql(query: str, name: str) -> pd.DataFrame:
         artifact_type="sql_result",
         name=name,
         created_at=utc_now(),
+        run_id=current_run_id(),
         source_ids=source_ids,
         row_count_after=profile["row_count"],
         columns=list(profile["schema"].keys()),
         sql=query,
-        metadata=profile,
+        metadata={**profile, **evidence_metadata()},
     )
     write_evidence(record)
     register_object(name, result, result_id)
     return result
-

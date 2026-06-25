@@ -17,4 +17,3 @@ def test_start_sets_project_name(tmp_path, monkeypatch):
     start("analysis")
 
     assert load_project()["project_name"] == "analysis"
-

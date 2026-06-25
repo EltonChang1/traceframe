@@ -9,4 +9,4 @@ def test_export_report_writes_html(tmp_path, monkeypatch):
 
     assert output.exists()
     assert "TraceFrame Audit Report" in output.read_text(encoding="utf-8")
-
+    assert "Stale Checks" in output.read_text(encoding="utf-8")

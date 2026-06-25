@@ -8,8 +8,9 @@ import pandas as pd
 
 from traceframe.evidence import EvidenceRecord, artifact_id, utc_now
 from traceframe.project import get_traceframe_dir
+from traceframe.runs import current_run_id, evidence_metadata
 from traceframe.storage import append_record, write_json
-from traceframe.tracking import artifact_for_name, write_evidence
+from traceframe.tracking import write_evidence
 
 
 def _mark(chart_obj: alt.Chart, kind: str) -> alt.Chart:
@@ -55,6 +56,7 @@ def chart(
         "evidence_id": chart_id,
         "chart_spec_path": str(Path(spec_path)),
         "created_at": utc_now(),
+        "run_id": current_run_id(),
     }
     append_record(trace_dir / "charts.json", "charts", record)
     evidence = EvidenceRecord(
@@ -62,9 +64,17 @@ def chart(
         artifact_type="chart",
         name=chart_name,
         created_at=record["created_at"],
+        run_id=current_run_id(),
         source_ids=[source_id] if source_id else [],
         chart_spec_path=str(Path(spec_path)),
-        metadata={"kind": kind, "x": x, "y": y, "title": title, "source": source_name},
+        metadata={
+            "kind": kind,
+            "x": x,
+            "y": y,
+            "title": title,
+            "source": source_name,
+            **evidence_metadata(),
+        },
     )
     write_evidence(evidence)
     return spec

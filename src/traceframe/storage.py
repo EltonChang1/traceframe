@@ -29,4 +29,3 @@ def append_record(path: str | Path, key: str, record: dict[str, Any]) -> None:
     data.setdefault(key, [])
     data[key].append(record)
     write_json(path, data)
-

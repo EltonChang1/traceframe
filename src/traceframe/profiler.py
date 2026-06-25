@@ -17,7 +17,9 @@ def profile_dataframe(df: pd.DataFrame) -> dict[str, Any]:
         "row_count": int(len(df)),
         "column_count": int(len(df.columns)),
         "schema": infer_schema(df),
-        "missing_values": {column: int(count) for column, count in df.isna().sum().items()},
+        "missing_values": {
+            column: int(count) for column, count in df.isna().sum().items()
+        },
         "duplicate_rows": int(df.duplicated().sum()),
     }
 
@@ -29,4 +31,3 @@ def profile_csv(path: str | Path) -> dict[str, Any]:
     profile["path"] = str(csv_path)
     profile["file_hash"] = sha256_file(csv_path)
     return profile
-

@@ -9,6 +9,7 @@ from traceframe.fingerprint import sha256_file
 from traceframe.lineage import add_node
 from traceframe.profiler import profile_dataframe
 from traceframe.project import get_traceframe_dir
+from traceframe.runs import current_run_id, evidence_metadata
 from traceframe.storage import append_record, write_json
 from traceframe.tracking import register_object
 
@@ -33,6 +34,7 @@ def _register_dataset(df: pd.DataFrame, path: str | Path, name: str) -> None:
         "missing_values": profile["missing_values"],
         "duplicate_rows": profile["duplicate_rows"],
         "created_at": utc_now(),
+        "run_id": current_run_id(),
     }
     append_record(trace_dir / "data_manifest.json", "datasets", record)
     add_node(dataset_id, "dataset", name, profile)
@@ -41,12 +43,15 @@ def _register_dataset(df: pd.DataFrame, path: str | Path, name: str) -> None:
         artifact_type="dataset",
         name=name,
         created_at=record["created_at"],
+        run_id=current_run_id(),
         file_hashes=[file_hash],
         row_count_after=profile["row_count"],
         columns=list(profile["schema"].keys()),
-        metadata={"path": str(path), **profile},
+        metadata={"path": str(path), **profile, **evidence_metadata()},
     )
-    write_json(trace_dir / "audit_logs" / f"{dataset_id}.json", record_to_dict(evidence))
+    write_json(
+        trace_dir / "audit_logs" / f"{dataset_id}.json", record_to_dict(evidence)
+    )
     register_object(name, df, dataset_id)
 
 
@@ -60,4 +65,3 @@ def read_parquet(path: str | Path, name: str | None = None) -> pd.DataFrame:
     df = pd.read_parquet(path)
     _register_dataset(df, path, _dataset_name(path, name))
     return df
-

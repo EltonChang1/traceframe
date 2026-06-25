@@ -51,9 +51,21 @@ tf.export_report("audit_report.html")
 traceframe init
 traceframe profile data/orders.csv
 traceframe status
+traceframe stale
 traceframe report
 traceframe verify monthly_revenue
 ```
+
+## Notebook Context
+
+TraceFrame records lightweight run context when you call `tf.start(...)`. In notebooks, you can provide the notebook name explicitly or through `TRACEFRAME_NOTEBOOK_NAME`:
+
+```python
+tf.start("revenue_analysis", notebook_name="revenue_analysis.ipynb")
+tf.note_cell(cell_id="metric-cell", execution_count=7, tags=["metric"])
+```
+
+Artifacts created after `tf.note_cell(...)` include that cell context in their evidence metadata.
 
 ## Report screenshot
 

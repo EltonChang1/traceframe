@@ -18,7 +18,8 @@ tf.metric(
     description="Total order revenue after duplicate order IDs are removed.",
 )
 
-monthly = tf.sql("""
+monthly = tf.sql(
+    """
     SELECT
         strftime('%Y-%m', CAST(order_date AS DATE)) AS month,
         SUM(total_price) AS revenue,
@@ -26,7 +27,9 @@ monthly = tf.sql("""
     FROM clean_orders
     GROUP BY 1
     ORDER BY 1
-""", name="monthly_revenue")
+""",
+    name="monthly_revenue",
+)
 
 tf.chart(
     monthly,

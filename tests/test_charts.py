@@ -12,7 +12,8 @@ def test_chart_registers_spec(tmp_path, monkeypatch):
 
     spec = tf.chart(df, x="month", y="revenue", kind="bar", name="revenue_chart")
 
-    charts = json.loads((tmp_path / ".traceframe" / "charts.json").read_text(encoding="utf-8"))
+    charts = json.loads(
+        (tmp_path / ".traceframe" / "charts.json").read_text(encoding="utf-8")
+    )
     assert spec["mark"]["type"] == "bar"
     assert charts["charts"][0]["name"] == "revenue_chart"
-

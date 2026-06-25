@@ -10,4 +10,3 @@ def sha256_file(path: str | Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             hasher.update(chunk)
     return f"sha256:{hasher.hexdigest()}"
-

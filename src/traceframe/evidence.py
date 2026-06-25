@@ -6,8 +6,9 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-
-ArtifactType = Literal["dataset", "transformation", "metric", "chart", "claim", "sql_result"]
+ArtifactType = Literal[
+    "dataset", "transformation", "metric", "chart", "claim", "sql_result"
+]
 
 
 class EvidenceRecord(BaseModel):
@@ -15,6 +16,7 @@ class EvidenceRecord(BaseModel):
     artifact_type: ArtifactType
     name: str
     created_at: str
+    run_id: str | None = None
     source_ids: list[str] = Field(default_factory=list)
     file_hashes: list[str] = Field(default_factory=list)
     row_count_before: int | None = None
@@ -44,4 +46,3 @@ def artifact_id(prefix: str, name: str) -> str:
 
 def record_to_dict(record: EvidenceRecord) -> dict[str, Any]:
     return record.model_dump()
-

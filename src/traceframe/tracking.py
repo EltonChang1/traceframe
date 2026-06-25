@@ -8,6 +8,7 @@ from traceframe.evidence import EvidenceRecord, artifact_id, record_to_dict, utc
 from traceframe.lineage import add_edge, add_node
 from traceframe.profiler import profile_dataframe
 from traceframe.project import get_traceframe_dir
+from traceframe.runs import current_run_id, evidence_metadata
 from traceframe.storage import write_json
 
 _tracked_objects: dict[str, Any] = {}
@@ -48,7 +49,9 @@ def write_evidence(record: EvidenceRecord) -> None:
     write_json(trace_dir / "audit_logs" / f"{record.id}.json", record_to_dict(record))
 
 
-def track(obj: Any, name: str, source: str | None = None, operation: str | None = None) -> Any:
+def track(
+    obj: Any, name: str, source: str | None = None, operation: str | None = None
+) -> Any:
     metadata = dataframe_metadata(obj)
     tracked_id = artifact_id("tf", name)
     source_id = artifact_for_name(source) if source else None
@@ -63,13 +66,13 @@ def track(obj: Any, name: str, source: str | None = None, operation: str | None 
         artifact_type="transformation",
         name=name,
         created_at=utc_now(),
+        run_id=current_run_id(),
         source_ids=source_ids,
         row_count_after=metadata.get("row_count"),
         columns=list(metadata.get("schema", {}).keys()),
         operation=operation,
-        metadata=metadata,
+        metadata={**metadata, **evidence_metadata()},
     )
     write_evidence(record)
     register_object(name, obj, tracked_id)
     return obj
-

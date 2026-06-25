@@ -7,4 +7,3 @@ def test_sha256_file_streams_digest(tmp_path):
 
     assert sha256_file(path).startswith("sha256:")
     assert len(sha256_file(path)) == len("sha256:") + 64
-
