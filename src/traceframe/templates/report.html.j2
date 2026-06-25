@@ -56,6 +56,7 @@
       <div class="stat"><strong>{{ summary.metrics }}</strong><span>Metrics</span></div>
       <div class="stat"><strong>{{ summary.charts }}</strong><span>Charts</span></div>
       <div class="stat"><strong>{{ summary.claims }}</strong><span>Claims</span></div>
+      <div class="stat"><strong>{{ summary.failed_checks }}</strong><span>Failed checks</span></div>
       <div class="stat"><strong>{{ summary.warnings }}</strong><span>Stale warnings</span></div>
     </div>
   </header>
@@ -197,6 +198,23 @@
     <tr><td>{{ claim.text }}</td><td>{{ claim.supports | join(", ") }}</td><td>{{ claim.confidence or "" }}</td><td><code>{{ claim.run_id or "" }}</code></td></tr>
     {% else %}
     <tr><td colspan="4">No claims registered.</td></tr>
+    {% endfor %}
+  </table>
+
+  <h2>Data Quality Checks</h2>
+  <table>
+    <tr><th>Name</th><th>Type</th><th>Status</th><th>Severity</th><th>Source</th><th>Details</th></tr>
+    {% for check in checks %}
+    <tr>
+      <td>{{ check.name }}</td>
+      <td>{{ check.check_type }}</td>
+      <td><span class="status {{ 'ok' if check.passed else 'missing' }}">{{ 'pass' if check.passed else 'fail' }}</span></td>
+      <td>{{ check.severity }}</td>
+      <td>{{ check.source or "" }}</td>
+      <td><code>{{ check.details }}</code></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6">No data quality checks recorded.</td></tr>
     {% endfor %}
   </table>
 

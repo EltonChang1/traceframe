@@ -32,6 +32,8 @@ clean = tf.track(
 )
 
 large_orders = tf.filter_rows(clean, "total_price >= 100", name="large_orders")
+tf.expect_not_null(large_orders, "total_price")
+tf.expect_unique(large_orders, "order_id")
 
 tf.metric("revenue", "SUM(total_price)", source="clean_orders")
 
@@ -56,6 +58,7 @@ traceframe status
 traceframe stale
 traceframe source-rows orders
 traceframe drilldown monthly_revenue_chart --x month --value 2026-01
+traceframe checks --failed-only
 traceframe report
 traceframe verify monthly_revenue
 ```
@@ -94,6 +97,18 @@ orders = tf.read_csv("orders.csv", name="orders", engine="polars")
 large_orders = tf.filter_rows(orders, "total_price >= 100", name="large_orders")
 
 lazy_orders = tf.scan_csv("orders.csv", name="orders_lazy")
+```
+
+## Data Quality Checks
+
+TraceFrame includes lightweight local expectations:
+
+```python
+tf.expect_not_null(orders, ["order_id", "total_price"])
+tf.expect_unique(orders, "order_id")
+tf.expect_no_duplicates(orders, subset=["order_id"])
+tf.expect_column_between(orders, "total_price", min_value=0)
+tf.expect("manual_review_complete", True)
 ```
 
 ## Report screenshot

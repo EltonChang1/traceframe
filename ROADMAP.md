@@ -34,7 +34,15 @@
 - `scan_csv` and `scan_parquet` for streaming-friendly local reads
 - DuckDB SQL support for tracked Polars objects
 
+## v0.5
+
+- Null checks
+- Duplicate checks
+- Type/schema checks
+- Unique-key checks
+- Threshold checks
+- Lightweight expectation records
+
 ## Later
 
-- Data quality checks
 - Optional local-safe AI assistance

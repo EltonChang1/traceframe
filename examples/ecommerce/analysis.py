@@ -16,6 +16,8 @@ large_orders = tf.filter_rows(
     "total_price >= 100",
     name="large_orders",
 )
+tf.expect_not_null(large_orders, "total_price")
+tf.expect_unique(large_orders, "order_id")
 
 tf.metric(
     name="revenue",

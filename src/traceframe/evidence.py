@@ -7,7 +7,7 @@ from uuid import uuid4
 from pydantic import BaseModel, Field
 
 ArtifactType = Literal[
-    "dataset", "transformation", "metric", "chart", "claim", "sql_result"
+    "dataset", "transformation", "metric", "chart", "claim", "sql_result", "check"
 ]
 
 

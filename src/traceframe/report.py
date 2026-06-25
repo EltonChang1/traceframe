@@ -19,6 +19,7 @@ def _metadata() -> dict[str, Any]:
     metrics = read_json(trace_dir / "metrics.json", {"metrics": []}).get("metrics", [])
     charts = read_json(trace_dir / "charts.json", {"charts": []}).get("charts", [])
     claims = read_json(trace_dir / "claims.json", {"claims": []}).get("claims", [])
+    checks = read_json(trace_dir / "checks.json", {"checks": []}).get("checks", [])
     runs = read_json(trace_dir / "runs.json", {"runs": []}).get("runs", [])
     cells = read_json(trace_dir / "cell_events.json", {"cells": []}).get("cells", [])
     stale_statuses = dataset_statuses()
@@ -59,6 +60,7 @@ def _metadata() -> dict[str, Any]:
         "metrics": metrics,
         "charts": charts,
         "claims": claims,
+        "checks": checks,
         "runs": runs,
         "cells": cells,
         "stale_statuses": stale_statuses,
@@ -74,6 +76,8 @@ def _metadata() -> dict[str, Any]:
             "metrics": len(metrics),
             "charts": len(charts),
             "claims": len(claims),
+            "checks": len(checks),
+            "failed_checks": sum(1 for check in checks if not check.get("passed")),
             "runs": len(runs),
             "warnings": sum(1 for status in stale_statuses if status["status"] != "ok"),
         },

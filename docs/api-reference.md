@@ -21,3 +21,12 @@ See `README.md` for the initial API.
 - `tf.read_parquet(path, name=None, engine="polars", lazy=False)` tracks Polars Parquet reads.
 - `tf.scan_csv(path, name=None)` tracks a Polars LazyFrame scan.
 - `tf.scan_parquet(path, name=None)` tracks a Polars LazyFrame scan.
+
+## v0.5 additions
+
+- `tf.expect_not_null(data, columns)` records null checks.
+- `tf.expect_no_duplicates(data, subset=None)` records duplicate-row checks.
+- `tf.expect_unique(data, columns)` records unique-key checks.
+- `tf.expect_schema(data, schema)` records type/schema checks.
+- `tf.expect_column_between(data, column, min_value=None, max_value=None)` records threshold checks.
+- `tf.expect(name, passed, ...)` records a generic local expectation.

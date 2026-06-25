@@ -7,7 +7,7 @@ from traceframe.evidence import utc_now
 from traceframe.storage import read_json, write_json
 
 TRACEFRAME_DIR = ".traceframe"
-TRACEFRAME_VERSION = "0.4.0"
+TRACEFRAME_VERSION = "0.5.0"
 
 DEFAULT_FILES: dict[str, dict[str, Any]] = {
     "data_manifest.json": {"datasets": []},
@@ -15,6 +15,7 @@ DEFAULT_FILES: dict[str, dict[str, Any]] = {
     "metrics.json": {"metrics": []},
     "charts.json": {"charts": []},
     "claims.json": {"claims": []},
+    "checks.json": {"checks": []},
     "runs.json": {"runs": []},
     "cell_events.json": {"cells": []},
 }
