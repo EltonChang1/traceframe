@@ -7,7 +7,7 @@ from traceframe.evidence import utc_now
 from traceframe.storage import read_json, write_json
 
 TRACEFRAME_DIR = ".traceframe"
-TRACEFRAME_VERSION = "0.5.0"
+TRACEFRAME_VERSION = "0.6.0"
 
 DEFAULT_FILES: dict[str, dict[str, Any]] = {
     "data_manifest.json": {"datasets": []},
@@ -16,6 +16,7 @@ DEFAULT_FILES: dict[str, dict[str, Any]] = {
     "charts.json": {"charts": []},
     "claims.json": {"claims": []},
     "checks.json": {"checks": []},
+    "assistant_plans.json": {"plans": []},
     "runs.json": {"runs": []},
     "cell_events.json": {"cells": []},
 }
@@ -69,15 +70,16 @@ def start(project_name: str, notebook_name: str | None = None) -> Path:
 
 def get_project_root(path: str | Path = ".") -> Path:
     global _active_project_root
-    if (
-        _active_project_root is not None
-        and (_active_project_root / TRACEFRAME_DIR).exists()
-    ):
-        return _active_project_root
-
     current = Path(path).resolve()
     if current.is_file():
         current = current.parent
+    if (
+        _active_project_root is not None
+        and (_active_project_root / TRACEFRAME_DIR).exists()
+        and (current == _active_project_root or _active_project_root in current.parents)
+    ):
+        return _active_project_root
+
     for candidate in [current, *current.parents]:
         if (candidate / TRACEFRAME_DIR).exists():
             _active_project_root = candidate

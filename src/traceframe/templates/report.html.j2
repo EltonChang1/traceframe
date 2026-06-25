@@ -57,6 +57,7 @@
       <div class="stat"><strong>{{ summary.charts }}</strong><span>Charts</span></div>
       <div class="stat"><strong>{{ summary.claims }}</strong><span>Claims</span></div>
       <div class="stat"><strong>{{ summary.failed_checks }}</strong><span>Failed checks</span></div>
+      <div class="stat"><strong>{{ summary.assistant_plans }}</strong><span>Assistant plans</span></div>
       <div class="stat"><strong>{{ summary.warnings }}</strong><span>Stale warnings</span></div>
     </div>
   </header>
@@ -225,6 +226,22 @@
     <tr><td><code>{{ cell.run_id }}</code></td><td>{{ cell.cell_id or "" }}</td><td>{{ cell.execution_count or "" }}</td><td><code>{{ cell.source_hash or "" }}</code></td><td>{{ cell.tags | join(", ") }}</td></tr>
     {% else %}
     <tr><td colspan="5">No notebook cell notes recorded.</td></tr>
+    {% endfor %}
+  </table>
+
+  <h2>Assistant Plans</h2>
+  <p class="section-note">{{ assistant_privacy_notice }}</p>
+  <table>
+    <tr><th>ID</th><th>Mode</th><th>Request</th><th>Steps</th></tr>
+    {% for plan in assistant_plans %}
+    <tr>
+      <td><code>{{ plan.id }}</code></td>
+      <td>{{ plan.mode }}</td>
+      <td>{{ plan.request }}</td>
+      <td>{{ plan.steps | length }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4">No assistant plans recorded.</td></tr>
     {% endfor %}
   </table>
 

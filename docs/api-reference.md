@@ -30,3 +30,9 @@ See `README.md` for the initial API.
 - `tf.expect_schema(data, schema)` records type/schema checks.
 - `tf.expect_column_between(data, column, min_value=None, max_value=None)` records threshold checks.
 - `tf.expect(name, passed, ...)` records a generic local expectation.
+
+## v0.6 additions
+
+- `tf.plan_analysis(request, data_paths=None, local_llm_command=None)` creates local assistant plan records.
+- `traceframe assist "request" --data orders.csv` prints and stores a local plan.
+- `--local-llm-command` is optional and runs only the command you provide.

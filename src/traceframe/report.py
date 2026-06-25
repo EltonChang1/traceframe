@@ -5,6 +5,7 @@ from typing import Any
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
+from traceframe.assistant import LOCAL_PRIVACY_NOTICE
 from traceframe.project import get_traceframe_dir, load_project
 from traceframe.stale import dataset_statuses
 from traceframe.storage import read_json
@@ -20,6 +21,9 @@ def _metadata() -> dict[str, Any]:
     charts = read_json(trace_dir / "charts.json", {"charts": []}).get("charts", [])
     claims = read_json(trace_dir / "claims.json", {"claims": []}).get("claims", [])
     checks = read_json(trace_dir / "checks.json", {"checks": []}).get("checks", [])
+    assistant_plans = read_json(trace_dir / "assistant_plans.json", {"plans": []}).get(
+        "plans", []
+    )
     runs = read_json(trace_dir / "runs.json", {"runs": []}).get("runs", [])
     cells = read_json(trace_dir / "cell_events.json", {"cells": []}).get("cells", [])
     stale_statuses = dataset_statuses()
@@ -61,6 +65,8 @@ def _metadata() -> dict[str, Any]:
         "charts": charts,
         "claims": claims,
         "checks": checks,
+        "assistant_plans": assistant_plans,
+        "assistant_privacy_notice": LOCAL_PRIVACY_NOTICE,
         "runs": runs,
         "cells": cells,
         "stale_statuses": stale_statuses,
@@ -78,6 +84,7 @@ def _metadata() -> dict[str, Any]:
             "claims": len(claims),
             "checks": len(checks),
             "failed_checks": sum(1 for check in checks if not check.get("passed")),
+            "assistant_plans": len(assistant_plans),
             "runs": len(runs),
             "warnings": sum(1 for status in stale_statuses if status["status"] != "ok"),
         },

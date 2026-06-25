@@ -9,3 +9,5 @@ In v0.3, DataFrame-like artifacts can include `source_rows` metadata pointing to
 In v0.4, profiling metadata includes an `engine` field for pandas, Polars, and Polars LazyFrame artifacts.
 
 In v0.5, data quality checks are stored in `.traceframe/checks.json` and mirrored as `check` evidence records.
+
+In v0.6, assistant planning records are stored in `.traceframe/assistant_plans.json` and mirrored as `assistant_plan` evidence records. The default assistant mode does not call external services.

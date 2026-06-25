@@ -5,6 +5,7 @@ from typing import Any
 
 import typer
 
+from traceframe.assistant import LOCAL_PRIVACY_NOTICE, plan_analysis
 from traceframe.profiler import profile_csv
 from traceframe.project import (
     TraceFrameProjectError,
@@ -59,6 +60,9 @@ def status() -> None:
     charts = read_json(trace_dir / "charts.json", {"charts": []}).get("charts", [])
     claims = read_json(trace_dir / "claims.json", {"claims": []}).get("claims", [])
     checks = read_json(trace_dir / "checks.json", {"checks": []}).get("checks", [])
+    plans = read_json(trace_dir / "assistant_plans.json", {"plans": []}).get(
+        "plans", []
+    )
     reports = list((trace_dir / "reports").glob("*.html"))
     warnings = sum(1 for item in dataset_statuses() if item["status"] != "ok")
     failed_checks = sum(1 for check in checks if not check.get("passed"))
@@ -73,6 +77,7 @@ def status() -> None:
     typer.echo(f"Claims: {len(claims)}")
     typer.echo(f"Checks: {len(checks)}")
     typer.echo(f"Failed checks: {failed_checks}")
+    typer.echo(f"Assistant plans: {len(plans)}")
     typer.echo(f"Reports: {len(reports)}")
     typer.echo(f"Stale warnings: {warnings}")
 
@@ -153,6 +158,34 @@ def checks_command(failed_only: bool = typer.Option(False, "--failed-only")) -> 
             typer.echo(f"  Source: {check['source']}")
 
 
+@app.command()
+def assist(
+    request: str,
+    data: list[str] | None = typer.Option(
+        None, "--data", help="Local data path to mention."
+    ),
+    local_llm_command: str | None = typer.Option(
+        None,
+        "--local-llm-command",
+        help="Optional local command to run. No command is used by default.",
+    ),
+) -> None:
+    try:
+        plan = plan_analysis(
+            request,
+            data_paths=data or [],
+            local_llm_command=local_llm_command,
+        )
+    except Exception as exc:
+        raise typer.Exit(str(exc))
+
+    typer.echo(LOCAL_PRIVACY_NOTICE)
+    typer.echo(f"Plan: {plan['id']} ({plan['mode']})")
+    for index, step in enumerate(plan["steps"], start=1):
+        typer.echo(f"{index}. {step['title']}")
+        typer.echo(step["code"])
+
+
 def _records(trace_dir: Path) -> list[dict[str, Any]]:
     data: list[dict[str, Any]] = []
     data.extend(
@@ -166,6 +199,9 @@ def _records(trace_dir: Path) -> list[dict[str, Any]]:
     data.extend(read_json(trace_dir / "charts.json", {"charts": []}).get("charts", []))
     data.extend(read_json(trace_dir / "claims.json", {"claims": []}).get("claims", []))
     data.extend(read_json(trace_dir / "checks.json", {"checks": []}).get("checks", []))
+    data.extend(
+        read_json(trace_dir / "assistant_plans.json", {"plans": []}).get("plans", [])
+    )
     data.extend(read_json(trace_dir / "lineage.json", {"nodes": []}).get("nodes", []))
     return data
 
@@ -217,6 +253,8 @@ def _record_type(record: dict[str, Any]) -> str:
         return "chart"
     if "check_type" in record:
         return "check"
+    if "privacy_notice" in record:
+        return "assistant_plan"
     if "file_hash" in record:
         return "dataset"
     return "artifact"

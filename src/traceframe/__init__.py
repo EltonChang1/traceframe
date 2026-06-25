@@ -1,3 +1,4 @@
+from traceframe.assistant import plan_analysis
 from traceframe.charts import chart
 from traceframe.checks import (
     expect,
@@ -30,6 +31,7 @@ __all__ = [
     "export_report",
     "metric",
     "note_cell",
+    "plan_analysis",
     "read_csv",
     "read_parquet",
     "scan_csv",

@@ -43,6 +43,13 @@
 - Threshold checks
 - Lightweight expectation records
 
+## v0.6
+
+- Local heuristic analysis planning
+- Optional user-provided local LLM command integration
+- Assistant plan evidence records
+- No external API calls by default
+
 ## Later
 
-- Optional local-safe AI assistance
+- Stable API hardening

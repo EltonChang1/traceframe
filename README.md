@@ -59,6 +59,7 @@ traceframe stale
 traceframe source-rows orders
 traceframe drilldown monthly_revenue_chart --x month --value 2026-01
 traceframe checks --failed-only
+traceframe assist "Build monthly revenue evidence" --data orders.csv
 traceframe report
 traceframe verify monthly_revenue
 ```
@@ -110,6 +111,19 @@ tf.expect_no_duplicates(orders, subset=["order_id"])
 tf.expect_column_between(orders, "total_price", min_value=0)
 tf.expect("manual_review_complete", True)
 ```
+
+## Local-safe Assistant Planning
+
+TraceFrame can suggest local workflow steps without calling external services:
+
+```python
+plan = tf.plan_analysis(
+    "Create monthly revenue evidence with quality checks and a chart",
+    data_paths=["orders.csv"],
+)
+```
+
+The default planner is deterministic and local. Optional local LLM integration only runs a command you explicitly provide, for example through `traceframe assist --local-llm-command`.
 
 ## Report screenshot
 
