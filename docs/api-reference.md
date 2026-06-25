@@ -41,3 +41,8 @@ See `README.md` for the initial API.
 
 - `traceframe doctor` reports project health diagnostics.
 - `traceframe.__version__` exposes the package version.
+
+## v2 additions
+
+- `tf.lineage_graph(artifact, direction="both", max_depth=None)` returns upstream and downstream graph context for an artifact ID or name.
+- `traceframe lineage ARTIFACT --direction upstream|downstream|both --depth N` prints a local lineage graph from the CLI.

@@ -1,14 +1,8 @@
 # TraceFrame
 
-TraceFrame is a local-first evidence layer for data science. It records the source data, transformations, metrics, charts, and claims behind your analysis so every result can be verified and reproduced.
+TraceFrame is a local-first evidence tracker for data science workflows. It records datasets, transformations, SQL outputs, metrics, charts, claims, checks, source-row samples, and lineage under a project-local `.traceframe/` directory.
 
-## Why?
-
-Data scientists often create charts, metrics, and reports in notebooks, but the evidence behind those results is hard to trace. TraceFrame makes the evidence automatic.
-
-## Local-first
-
-TraceFrame runs on your machine. No data leaves your environment by default.
+No cloud service, telemetry, or external API call is used by default.
 
 ## Install
 
@@ -16,7 +10,9 @@ TraceFrame runs on your machine. No data leaves your environment by default.
 pip install -e .
 ```
 
-## Quickstart
+Python 3.10+ is required.
+
+## Minimal Workflow
 
 ```python
 import traceframe as tf
@@ -24,30 +20,92 @@ import traceframe as tf
 tf.start("revenue_analysis")
 
 orders = tf.read_csv("orders.csv", name="orders")
-clean = tf.track(
-    orders.drop_duplicates("order_id"),
+clean_orders = tf.filter_rows(
+    orders,
+    "status == 'complete'",
     name="clean_orders",
-    source="orders",
-    operation="drop_duplicates(order_id)",
 )
 
-large_orders = tf.filter_rows(clean, "total_price >= 100", name="large_orders")
-tf.expect_not_null(large_orders, "total_price")
-tf.expect_unique(large_orders, "order_id")
-
+tf.expect_not_null(clean_orders, ["order_id", "total_price"])
+tf.expect_unique(clean_orders, "order_id")
 tf.metric("revenue", "SUM(total_price)", source="clean_orders")
 
-monthly = tf.sql("""
-    SELECT strftime('%Y-%m', CAST(order_date AS DATE)) AS month, SUM(total_price) AS revenue
+monthly = tf.sql(
+    """
+    SELECT strftime('%Y-%m', CAST(order_date AS DATE)) AS month,
+           SUM(total_price) AS revenue
     FROM clean_orders
     GROUP BY 1
     ORDER BY 1
-""", name="monthly_revenue")
+    """,
+    name="monthly_revenue",
+)
 
 tf.chart(monthly, x="month", y="revenue", kind="line", name="monthly_revenue_chart")
-tf.claim("Revenue was calculated after removing duplicate order IDs.", ["monthly_revenue"], "high")
+tf.claim("Revenue is calculated from complete orders.", ["monthly_revenue"], "high")
 tf.export_report("audit_report.html")
 ```
+
+## Python API
+
+Project and data:
+
+```python
+tf.start("project_name", notebook_name=None)
+tf.read_csv("orders.csv", name="orders")
+tf.read_parquet("orders.parquet", name="orders")
+tf.read_csv("orders.csv", name="orders", engine="polars")
+tf.scan_csv("orders.csv", name="orders_lazy")
+tf.track(df, name="clean_orders", source="orders", operation="drop_duplicates")
+tf.filter_rows(df, "total_price >= 100", name="large_orders")
+```
+
+Evidence:
+
+```python
+tf.sql("SELECT ... FROM clean_orders", name="monthly_revenue")
+tf.metric("revenue", "SUM(total_price)", source="clean_orders")
+tf.chart(monthly, x="month", y="revenue", kind="bar", name="monthly_chart")
+tf.claim("Conclusion text", supports=["monthly_revenue"], confidence="high")
+tf.export_report("audit_report.html")
+```
+
+Checks:
+
+```python
+tf.expect_not_null(df, ["id", "amount"])
+tf.expect_unique(df, "id")
+tf.expect_no_duplicates(df, subset=["id"])
+tf.expect_schema(df, {"id": "int64"})
+tf.expect_column_between(df, "amount", min_value=0)
+tf.expect("manual_review_complete", True)
+```
+
+Lineage and source rows:
+
+```python
+tf.lineage_graph("monthly_revenue", direction="upstream")
+tf.export_source_rows("clean_orders", limit=10)
+tf.drilldown("monthly_chart", x="month", value="2026-01")
+```
+
+Notebook context:
+
+```python
+tf.start("revenue_analysis", notebook_name="revenue_analysis.ipynb")
+tf.note_cell(cell_id="metric-cell", execution_count=7, tags=["metric"])
+```
+
+Local assistant planning:
+
+```python
+tf.plan_analysis(
+    "Create monthly revenue evidence with checks and a chart",
+    data_paths=["orders.csv"],
+)
+```
+
+The default planner is deterministic and local. `local_llm_command` runs only when explicitly provided by the caller.
 
 ## CLI
 
@@ -56,8 +114,12 @@ traceframe init
 traceframe profile data/orders.csv
 traceframe status
 traceframe stale
-traceframe source-rows orders
-traceframe drilldown monthly_revenue_chart --x month --value 2026-01
+traceframe lineage monthly_revenue --direction upstream
+traceframe lineage orders --direction downstream --depth 1
+traceframe lineage monthly_revenue --json
+traceframe lineage monthly_revenue --json --include-metadata
+traceframe source-rows clean_orders --limit 10
+traceframe drilldown monthly_chart --x month --value 2026-01
 traceframe checks --failed-only
 traceframe assist "Build monthly revenue evidence" --data orders.csv
 traceframe doctor
@@ -65,79 +127,50 @@ traceframe report
 traceframe verify monthly_revenue
 ```
 
-## Notebook Context
+## Metadata Layout
 
-TraceFrame records lightweight run context when you call `tf.start(...)`. In notebooks, you can provide the notebook name explicitly or through `TRACEFRAME_NOTEBOOK_NAME`:
+TraceFrame stores project evidence in `.traceframe/`:
 
-```python
-tf.start("revenue_analysis", notebook_name="revenue_analysis.ipynb")
-tf.note_cell(cell_id="metric-cell", execution_count=7, tags=["metric"])
+```text
+.traceframe/
+  project.json
+  data_manifest.json
+  lineage.json
+  metrics.json
+  charts.json
+  claims.json
+  checks.json
+  runs.json
+  cell_events.json
+  assistant_plans.json
+  audit_logs/
+  source_rows/
+  reports/
 ```
 
-Artifacts created after `tf.note_cell(...)` include that cell context in their evidence metadata.
+JSON metadata is the source of truth. Source-row samples are stored locally as JSON. Chart drilldown data is stored in a local DuckDB database under `.traceframe/source_rows/`.
 
-## Source Rows and Drilldown
-
-TraceFrame stores small local source-row samples for tracked datasets, transformations, SQL results, and charts. Export them with:
+## Verification
 
 ```bash
-traceframe source-rows clean_orders --limit 10
+.venv/bin/python -m pytest
+.venv/bin/ruff check .
+.venv/bin/black --target-version py311 --check .
+.venv/bin/mypy src/traceframe
 ```
 
-Charts also store their backing data in a local DuckDB file for point inspection:
+## Current MVP Surface (v0.1)
 
-```python
-tf.drilldown("monthly_revenue_chart", x="month", value="2026-01")
-```
+TraceFrame tracks explicit local evidence for pandas, DuckDB SQL, and Polars workflows. It does not provide automatic full operation tracing, cloud sync, hosted dashboards, telemetry, notebook extensions, or complete row-level lineage.
 
-## Polars
+## License
 
-TraceFrame can track Polars DataFrames and LazyFrames:
+TraceFrame is released under the [MIT License](LICENSE).
 
-```python
-orders = tf.read_csv("orders.csv", name="orders", engine="polars")
-large_orders = tf.filter_rows(orders, "total_price >= 100", name="large_orders")
+## Documentation
 
-lazy_orders = tf.scan_csv("orders.csv", name="orders_lazy")
-```
-
-## Data Quality Checks
-
-TraceFrame includes lightweight local expectations:
-
-```python
-tf.expect_not_null(orders, ["order_id", "total_price"])
-tf.expect_unique(orders, "order_id")
-tf.expect_no_duplicates(orders, subset=["order_id"])
-tf.expect_column_between(orders, "total_price", min_value=0)
-tf.expect("manual_review_complete", True)
-```
-
-## Local-safe Assistant Planning
-
-TraceFrame can suggest local workflow steps without calling external services:
-
-```python
-plan = tf.plan_analysis(
-    "Create monthly revenue evidence with quality checks and a chart",
-    data_paths=["orders.csv"],
-)
-```
-
-The default planner is deterministic and local. Optional local LLM integration only runs a command you explicitly provide, for example through `traceframe assist --local-llm-command`.
-
-## Report screenshot
-
-Screenshot placeholder: local HTML audit reports are generated by `traceframe report`.
-
-## Roadmap
-
-See [ROADMAP.md](ROADMAP.md).
-
-## Stable v1.0 Surface
-
-TraceFrame v1.0 covers the local evidence workflow across pandas, DuckDB, and Polars: tracked local files, transformations, SQL, metrics, charts, claims, source-row samples, data quality checks, local assistant plans, audit reports, and `traceframe doctor` diagnostics.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+- [Getting started](docs/getting-started.md)
+- [API reference](docs/api-reference.md)
+- [Evidence model](docs/evidence-model.md)
+- [Roadmap](ROADMAP.md)
+- [Contributing](CONTRIBUTING.md)

@@ -19,6 +19,17 @@ def _metadata() -> dict[str, Any]:
         "datasets", []
     )
     lineage = read_json(trace_dir / "lineage.json", {"nodes": [], "edges": []})
+    lineage_nodes = lineage.get("nodes", [])
+    lineage_edges = lineage.get("edges", [])
+    lineage_node_by_id = {node.get("id"): node for node in lineage_nodes}
+    lineage_edge_rows = [
+        {
+            **edge,
+            "from_name": lineage_node_by_id.get(edge.get("from"), {}).get("name"),
+            "to_name": lineage_node_by_id.get(edge.get("to"), {}).get("name"),
+        }
+        for edge in lineage_edges
+    ]
     metrics = read_json(trace_dir / "metrics.json", {"metrics": []}).get("metrics", [])
     charts = read_json(trace_dir / "charts.json", {"charts": []}).get("charts", [])
     claims = read_json(trace_dir / "claims.json", {"claims": []}).get("claims", [])
@@ -62,7 +73,7 @@ def _metadata() -> dict[str, Any]:
     return {
         "project": load_project(),
         "datasets": datasets,
-        "lineage": lineage,
+        "lineage": {**lineage, "edge_rows": lineage_edge_rows},
         "metrics": metrics,
         "charts": charts,
         "claims": claims,
@@ -79,9 +90,7 @@ def _metadata() -> dict[str, Any]:
         "summary": {
             "datasets": len(datasets),
             "transformations": sum(
-                1
-                for node in lineage.get("nodes", [])
-                if node.get("type") == "transformation"
+                1 for node in lineage_nodes if node.get("type") == "transformation"
             ),
             "metrics": len(metrics),
             "charts": len(charts),

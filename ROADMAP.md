@@ -58,6 +58,12 @@
 - Pandas + DuckDB + Polars end-to-end workflow tests
 - Expanded examples and documentation
 
+## v2
+
+- Query upstream/downstream lineage by artifact name or ID
+- `traceframe lineage ARTIFACT` CLI inspection
+- Report lineage edges include readable artifact names alongside stable IDs
+
 ## Later
 
 - Stable API hardening

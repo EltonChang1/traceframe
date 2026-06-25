@@ -13,3 +13,5 @@ In v0.5, data quality checks are stored in `.traceframe/checks.json` and mirrore
 In v0.6, assistant planning records are stored in `.traceframe/assistant_plans.json` and mirrored as `assistant_plan` evidence records. The default assistant mode does not call external services.
 
 In v1.0, reports include a project health summary derived from stale dataset checks, failed quality checks, and missing evidence files.
+
+In v2, lineage evidence can be queried as a graph by artifact name or ID. The graph remains stored locally in `.traceframe/lineage.json` and can be inspected with `tf.lineage_graph(...)` or `traceframe lineage`.

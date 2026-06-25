@@ -10,6 +10,7 @@ from traceframe.checks import (
 )
 from traceframe.claims import claim
 from traceframe.io import read_csv, read_parquet, scan_csv, scan_parquet
+from traceframe.lineage import lineage_graph
 from traceframe.metrics import metric
 from traceframe.project import start
 from traceframe.report import export_report
@@ -41,6 +42,7 @@ __all__ = [
     "drilldown",
     "export_source_rows",
     "filter_rows",
+    "lineage_graph",
     "stale_datasets",
     "sql",
     "start",

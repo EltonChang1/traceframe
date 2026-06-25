@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -7,6 +8,7 @@ import typer
 
 from traceframe.assistant import LOCAL_PRIVACY_NOTICE, plan_analysis
 from traceframe.diagnostics import project_health
+from traceframe.lineage import LineageDirection, lineage_graph
 from traceframe.profiler import profile_csv
 from traceframe.project import (
     TraceFrameProjectError,
@@ -162,6 +164,79 @@ def checks_command(failed_only: bool = typer.Option(False, "--failed-only")) -> 
         )
         if check.get("source"):
             typer.echo(f"  Source: {check['source']}")
+
+
+def _compact_lineage_graph(graph: dict[str, Any]) -> dict[str, Any]:
+    def compact_node(node: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "id": node.get("id"),
+            "name": node.get("name"),
+            "type": node.get("type"),
+        }
+
+    return {
+        "artifact": graph["artifact"],
+        "direction": graph["direction"],
+        "max_depth": graph["max_depth"],
+        "center_ids": graph["center_ids"],
+        "nodes": [compact_node(node) for node in graph["nodes"]],
+        "upstream": [compact_node(node) for node in graph["upstream"]],
+        "downstream": [compact_node(node) for node in graph["downstream"]],
+        "edges": graph["edges"],
+        "edge_rows": graph["edge_rows"],
+    }
+
+
+@app.command("lineage")
+def lineage_command(
+    artifact_id: str,
+    direction: LineageDirection = typer.Option(
+        "both", "--direction", help="Show upstream, downstream, or both."
+    ),
+    depth: int | None = typer.Option(
+        None, "--depth", min=1, help="Limit traversal depth from the artifact."
+    ),
+    json_output: bool = typer.Option(
+        False, "--json", help="Print the lineage graph as JSON."
+    ),
+    include_metadata: bool = typer.Option(
+        False, "--include-metadata", help="Include node metadata in JSON output."
+    ),
+) -> None:
+    try:
+        graph = lineage_graph(artifact_id, direction=direction, max_depth=depth)
+    except KeyError as exc:
+        _exit_with_error(exc.args[0] if exc.args else exc)
+    except (ValueError, TraceFrameProjectError) as exc:
+        _exit_with_error(exc)
+
+    if json_output:
+        output_graph = graph if include_metadata else _compact_lineage_graph(graph)
+        typer.echo(json.dumps(output_graph, indent=2, sort_keys=True))
+        return
+
+    typer.echo(f"Artifact: {artifact_id}")
+    typer.echo(f"Direction: {graph['direction']}")
+    typer.echo(f"Nodes: {len(graph['nodes'])}")
+    for node in graph["nodes"]:
+        marker = "*" if node["id"] in graph["center_ids"] else "-"
+        typer.echo(f"{marker} {node['name']} [{node['type']}] {node['id']}")
+
+    typer.echo(f"Upstream: {len(graph['upstream'])}")
+    for node in graph["upstream"]:
+        typer.echo(f"  {node['name']} [{node['type']}] {node['id']}")
+
+    typer.echo(f"Downstream: {len(graph['downstream'])}")
+    for node in graph["downstream"]:
+        typer.echo(f"  {node['name']} [{node['type']}] {node['id']}")
+
+    typer.echo(f"Edges: {len(graph['edges'])}")
+    for edge in graph["edge_rows"]:
+        from_label = f"{edge['from_name']} [{edge['from_type']}]"
+        to_label = f"{edge['to_name']} [{edge['to_type']}]"
+        typer.echo(
+            f"  {from_label} {edge['from']} -> {to_label} {edge['to']} ({edge['type']})"
+        )
 
 
 @app.command()

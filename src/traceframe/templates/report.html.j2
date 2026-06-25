@@ -139,6 +139,7 @@
   {% endfor %}
 
   <h2>Lineage</h2>
+  <p class="section-note">Use <code>traceframe lineage ARTIFACT</code> to inspect upstream and downstream dependencies for a single artifact.</p>
   <table>
     <tr><th>ID</th><th>Type</th><th>Name</th></tr>
     {% for node in lineage.nodes %}
@@ -150,8 +151,12 @@
   <h3>Edges</h3>
   <table>
     <tr><th>From</th><th>To</th><th>Type</th></tr>
-    {% for edge in lineage.edges %}
-    <tr><td><code>{{ edge.from }}</code></td><td><code>{{ edge.to }}</code></td><td>{{ edge.type }}</td></tr>
+    {% for edge in lineage.edge_rows %}
+    <tr>
+      <td>{{ edge.from_name or "" }} <code>{{ edge.from }}</code></td>
+      <td>{{ edge.to_name or "" }} <code>{{ edge.to }}</code></td>
+      <td>{{ edge.type }}</td>
+    </tr>
     {% else %}
     <tr><td colspan="3">No lineage edges tracked.</td></tr>
     {% endfor %}
