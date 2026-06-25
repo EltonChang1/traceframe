@@ -1,0 +1,5 @@
+tail_number,event_date,event_type,downtime_hours
+N100TF,2026-01-12,inspection,4
+N200TF,2026-01-18,repair,11
+N100TF,2026-02-02,repair,7
+

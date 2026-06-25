@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>TraceFrame Audit Report</title>
+  <style>
+    body { color: #1f2937; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.5; margin: 0; }
+    main { margin: 0 auto; max-width: 960px; padding: 32px 20px 56px; }
+    h1, h2 { color: #111827; }
+    table { border-collapse: collapse; margin: 12px 0 28px; width: 100%; }
+    th, td { border-bottom: 1px solid #e5e7eb; padding: 8px; text-align: left; vertical-align: top; }
+    th { background: #f9fafb; font-weight: 600; }
+    code { background: #f3f4f6; border-radius: 4px; padding: 2px 4px; }
+    .muted { color: #6b7280; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>TraceFrame Audit Report</h1>
+  <p class="muted">Project: {{ project.project_name }}</p>
+
+  <h2>Dataset Manifest</h2>
+  <table>
+    <tr><th>Name</th><th>Rows</th><th>Columns</th><th>Hash</th></tr>
+    {% for dataset in datasets %}
+    <tr><td>{{ dataset.name }}</td><td>{{ dataset.row_count }}</td><td>{{ dataset.column_count }}</td><td><code>{{ dataset.file_hash }}</code></td></tr>
+    {% else %}
+    <tr><td colspan="4">No datasets tracked.</td></tr>
+    {% endfor %}
+  </table>
+
+  <h2>Data Quality Summary</h2>
+  {% for dataset in datasets %}
+  <h3>{{ dataset.name }}</h3>
+  <p>Duplicate rows: {{ dataset.duplicate_rows }}</p>
+  <table>
+    <tr><th>Column</th><th>Missing values</th><th>Type</th></tr>
+    {% for column, dtype in dataset.schema.items() %}
+    <tr><td>{{ column }}</td><td>{{ dataset.missing_values.get(column, 0) }}</td><td>{{ dtype }}</td></tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p>No data quality information yet.</p>
+  {% endfor %}
+
+  <h2>Lineage</h2>
+  <table>
+    <tr><th>ID</th><th>Type</th><th>Name</th></tr>
+    {% for node in lineage.nodes %}
+    <tr><td><code>{{ node.id }}</code></td><td>{{ node.type }}</td><td>{{ node.name }}</td></tr>
+    {% else %}
+    <tr><td colspan="3">No lineage nodes tracked.</td></tr>
+    {% endfor %}
+  </table>
+
+  <h2>Metrics</h2>
+  <table>
+    <tr><th>Name</th><th>Formula</th><th>Source</th><th>Description</th></tr>
+    {% for metric in metrics %}
+    <tr><td>{{ metric.name }}</td><td><code>{{ metric.formula }}</code></td><td>{{ metric.source }}</td><td>{{ metric.description or "" }}</td></tr>
+    {% else %}
+    <tr><td colspan="4">No metrics registered.</td></tr>
+    {% endfor %}
+  </table>
+
+  <h2>Chart Evidence</h2>
+  <table>
+    <tr><th>Name</th><th>Kind</th><th>X</th><th>Y</th><th>Spec</th></tr>
+    {% for chart in charts %}
+    <tr><td>{{ chart.name }}</td><td>{{ chart.kind }}</td><td>{{ chart.x }}</td><td>{{ chart.y }}</td><td><code>{{ chart.chart_spec_path }}</code></td></tr>
+    {% else %}
+    <tr><td colspan="5">No charts registered.</td></tr>
+    {% endfor %}
+  </table>
+
+  <h2>Claims</h2>
+  <table>
+    <tr><th>Claim</th><th>Supports</th><th>Confidence</th></tr>
+    {% for claim in claims %}
+    <tr><td>{{ claim.text }}</td><td>{{ claim.supports | join(", ") }}</td><td>{{ claim.confidence or "" }}</td></tr>
+    {% else %}
+    <tr><td colspan="3">No claims registered.</td></tr>
+    {% endfor %}
+  </table>
+
+  <h2>Reproducibility</h2>
+  <p>Run the analysis script from the project root, then regenerate this report with <code>traceframe report</code>.</p>
+</main>
+</body>
+</html>
+

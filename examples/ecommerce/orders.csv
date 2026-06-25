@@ -1,0 +1,8 @@
+order_id,order_date,status,total_price
+1001,2026-01-04,complete,120.50
+1002,2026-01-18,complete,88.00
+1003,2026-02-02,cancelled,42.00
+1004,2026-02-14,complete,220.00
+1004,2026-02-14,complete,220.00
+1005,2026-03-06,complete,310.25
+

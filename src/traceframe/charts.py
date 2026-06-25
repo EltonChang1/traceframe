@@ -1,0 +1,70 @@
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+import altair as alt
+import pandas as pd
+
+from traceframe.evidence import EvidenceRecord, artifact_id, utc_now
+from traceframe.project import get_traceframe_dir
+from traceframe.storage import append_record, write_json
+from traceframe.tracking import artifact_for_name, write_evidence
+
+
+def _mark(chart_obj: alt.Chart, kind: str) -> alt.Chart:
+    if kind == "line":
+        return chart_obj.mark_line()
+    if kind == "bar":
+        return chart_obj.mark_bar()
+    if kind == "scatter":
+        return chart_obj.mark_circle()
+    raise ValueError("Unsupported chart kind. Use one of: line, bar, scatter.")
+
+
+def chart(
+    data: pd.DataFrame,
+    x: str,
+    y: str,
+    kind: str,
+    title: str | None = None,
+    name: str | None = None,
+) -> dict[str, Any]:
+    chart_name = name or title or f"{y}_by_{x}"
+    chart_id = artifact_id("chart", chart_name)
+    trace_dir = get_traceframe_dir()
+    source_name = data.attrs.get("traceframe_name") if hasattr(data, "attrs") else None
+    source_id = data.attrs.get("traceframe_id") if hasattr(data, "attrs") else None
+
+    chart_obj = _mark(alt.Chart(data), kind).encode(x=x, y=y)
+    if title:
+        chart_obj = chart_obj.properties(title=title)
+    spec = chart_obj.to_dict()
+    spec_path = trace_dir / "audit_logs" / f"{chart_id}_vegalite.json"
+    write_json(spec_path, spec)
+
+    record = {
+        "id": chart_id,
+        "title": title or chart_name,
+        "name": chart_name,
+        "kind": kind,
+        "x": x,
+        "y": y,
+        "source": source_name,
+        "source_id": source_id,
+        "evidence_id": chart_id,
+        "chart_spec_path": str(Path(spec_path)),
+        "created_at": utc_now(),
+    }
+    append_record(trace_dir / "charts.json", "charts", record)
+    evidence = EvidenceRecord(
+        id=chart_id,
+        artifact_type="chart",
+        name=chart_name,
+        created_at=record["created_at"],
+        source_ids=[source_id] if source_id else [],
+        chart_spec_path=str(Path(spec_path)),
+        metadata={"kind": kind, "x": x, "y": y, "title": title, "source": source_name},
+    )
+    write_evidence(evidence)
+    return spec

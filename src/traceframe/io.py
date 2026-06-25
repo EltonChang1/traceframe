@@ -1,0 +1,63 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+import pandas as pd
+
+from traceframe.evidence import EvidenceRecord, artifact_id, record_to_dict, utc_now
+from traceframe.fingerprint import sha256_file
+from traceframe.lineage import add_node
+from traceframe.profiler import profile_dataframe
+from traceframe.project import get_traceframe_dir
+from traceframe.storage import append_record, write_json
+from traceframe.tracking import register_object
+
+
+def _dataset_name(path: str | Path, name: str | None) -> str:
+    return name or Path(path).stem
+
+
+def _register_dataset(df: pd.DataFrame, path: str | Path, name: str) -> None:
+    trace_dir = get_traceframe_dir()
+    dataset_id = artifact_id("ds", name)
+    file_hash = sha256_file(path)
+    profile = profile_dataframe(df)
+    record = {
+        "id": dataset_id,
+        "name": name,
+        "path": str(path),
+        "file_hash": file_hash,
+        "row_count": profile["row_count"],
+        "column_count": profile["column_count"],
+        "schema": profile["schema"],
+        "missing_values": profile["missing_values"],
+        "duplicate_rows": profile["duplicate_rows"],
+        "created_at": utc_now(),
+    }
+    append_record(trace_dir / "data_manifest.json", "datasets", record)
+    add_node(dataset_id, "dataset", name, profile)
+    evidence = EvidenceRecord(
+        id=dataset_id,
+        artifact_type="dataset",
+        name=name,
+        created_at=record["created_at"],
+        file_hashes=[file_hash],
+        row_count_after=profile["row_count"],
+        columns=list(profile["schema"].keys()),
+        metadata={"path": str(path), **profile},
+    )
+    write_json(trace_dir / "audit_logs" / f"{dataset_id}.json", record_to_dict(evidence))
+    register_object(name, df, dataset_id)
+
+
+def read_csv(path: str | Path, name: str | None = None) -> pd.DataFrame:
+    df = pd.read_csv(path)
+    _register_dataset(df, path, _dataset_name(path, name))
+    return df
+
+
+def read_parquet(path: str | Path, name: str | None = None) -> pd.DataFrame:
+    df = pd.read_parquet(path)
+    _register_dataset(df, path, _dataset_name(path, name))
+    return df
+
