@@ -4,6 +4,7 @@ import re
 
 import duckdb
 import pandas as pd
+import polars as pl
 
 from traceframe.evidence import EvidenceRecord, artifact_id, utc_now
 from traceframe.lineage import add_edge, add_node
@@ -43,6 +44,10 @@ def sql(query: str, name: str) -> pd.DataFrame:
     for table_name, obj in tracked_objects().items():
         if isinstance(obj, pd.DataFrame):
             conn.register(table_name, obj)
+        elif isinstance(obj, pl.DataFrame):
+            conn.register(table_name, obj.to_pandas())
+        elif isinstance(obj, pl.LazyFrame):
+            conn.register(table_name, obj.collect().to_pandas())
 
     result = conn.execute(query).fetchdf()
     result_id = artifact_id("sql", name)

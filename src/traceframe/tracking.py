@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 import pandas as pd
+import polars as pl
 
 from traceframe.evidence import EvidenceRecord, artifact_id, record_to_dict, utc_now
 from traceframe.lineage import add_edge, add_node
@@ -14,6 +15,7 @@ from traceframe.storage import read_json, write_json
 
 _tracked_objects: dict[str, Any] = {}
 _artifact_ids: dict[str, str] = {}
+_object_names: dict[int, str] = {}
 
 
 def tracked_objects() -> dict[str, Any]:
@@ -24,16 +26,30 @@ def artifact_for_name(name: str) -> str | None:
     return _artifact_ids.get(name)
 
 
+def object_name(obj: Any) -> str | None:
+    if hasattr(obj, "attrs"):
+        return obj.attrs.get("traceframe_name")
+    return _object_names.get(id(obj))
+
+
+def object_artifact_id(obj: Any) -> str | None:
+    if hasattr(obj, "attrs"):
+        return obj.attrs.get("traceframe_id")
+    name = _object_names.get(id(obj))
+    return _artifact_ids.get(name) if name else None
+
+
 def register_object(name: str, obj: Any, artifact_id_value: str) -> None:
     _tracked_objects[name] = obj
     _artifact_ids[name] = artifact_id_value
+    _object_names[id(obj)] = name
     if hasattr(obj, "attrs"):
         obj.attrs["traceframe_name"] = name
         obj.attrs["traceframe_id"] = artifact_id_value
 
 
 def dataframe_metadata(obj: Any) -> dict[str, Any]:
-    if isinstance(obj, pd.DataFrame):
+    if isinstance(obj, (pd.DataFrame, pl.DataFrame, pl.LazyFrame)):
         return profile_dataframe(obj)
     columns = list(getattr(obj, "columns", []))
     return {
@@ -46,7 +62,7 @@ def dataframe_metadata(obj: Any) -> dict[str, Any]:
 
 
 def _source_rows_metadata(obj: Any, artifact_id_value: str) -> dict[str, Any] | None:
-    if isinstance(obj, pd.DataFrame):
+    if isinstance(obj, (pd.DataFrame, pl.DataFrame, pl.LazyFrame)):
         return sample_dataframe(obj, artifact_id_value)
     return None
 
@@ -94,13 +110,18 @@ def track(
 
 
 def filter_rows(
-    df: pd.DataFrame,
+    df: pd.DataFrame | pl.DataFrame | pl.LazyFrame,
     condition: str,
     name: str | None = None,
     source: str | None = None,
-) -> pd.DataFrame:
-    filtered = df.query(condition)
-    source_name = source or df.attrs.get("traceframe_name")
+) -> pd.DataFrame | pl.DataFrame | pl.LazyFrame:
+    if isinstance(df, pd.DataFrame):
+        filtered = df.query(condition)
+    elif isinstance(df, pl.LazyFrame):
+        filtered = df.filter(pl.sql_expr(condition))
+    else:
+        filtered = df.filter(pl.sql_expr(condition))
+    source_name = source or object_name(df)
     filter_name = name or f"{source_name or 'data'}_filtered"
     result = track(
         filtered,
@@ -109,7 +130,7 @@ def filter_rows(
         operation=f"filter({condition})",
     )
 
-    artifact_id_value = result.attrs.get("traceframe_id")
+    artifact_id_value = object_artifact_id(result)
     if artifact_id_value:
         trace_dir = get_traceframe_dir()
         evidence_path = trace_dir / "audit_logs" / f"{artifact_id_value}.json"

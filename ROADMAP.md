@@ -27,8 +27,14 @@
 - Explicit filter tracking
 - DuckDB-backed chart drilldown
 
+## v0.4
+
+- Native Polars DataFrame tracking
+- LazyFrame schema profiling
+- `scan_csv` and `scan_parquet` for streaming-friendly local reads
+- DuckDB SQL support for tracked Polars objects
+
 ## Later
 
-- Native Polars support
 - Data quality checks
 - Optional local-safe AI assistance

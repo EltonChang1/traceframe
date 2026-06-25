@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 import pandas as pd
+import polars as pl
 
 from traceframe.evidence import EvidenceRecord, artifact_id, record_to_dict, utc_now
 from traceframe.fingerprint import sha256_file
@@ -19,7 +21,10 @@ def _dataset_name(path: str | Path, name: str | None) -> str:
     return name or Path(path).stem
 
 
-def _register_dataset(df: pd.DataFrame, path: str | Path, name: str) -> None:
+TableLike = pd.DataFrame | pl.DataFrame | pl.LazyFrame
+
+
+def _register_dataset(df: TableLike, path: str | Path, name: str) -> None:
     trace_dir = get_traceframe_dir()
     dataset_id = artifact_id("ds", name)
     file_hash = sha256_file(path)
@@ -64,13 +69,41 @@ def _register_dataset(df: pd.DataFrame, path: str | Path, name: str) -> None:
     register_object(name, df, dataset_id)
 
 
-def read_csv(path: str | Path, name: str | None = None) -> pd.DataFrame:
-    df = pd.read_csv(path)
+def read_csv(
+    path: str | Path,
+    name: str | None = None,
+    engine: Literal["pandas", "polars"] = "pandas",
+    lazy: bool = False,
+) -> TableLike:
+    if engine == "polars":
+        df = pl.scan_csv(path) if lazy else pl.read_csv(path)
+    else:
+        if lazy:
+            raise ValueError("lazy=True is only supported with engine='polars'.")
+        df = pd.read_csv(path)
     _register_dataset(df, path, _dataset_name(path, name))
     return df
 
 
-def read_parquet(path: str | Path, name: str | None = None) -> pd.DataFrame:
-    df = pd.read_parquet(path)
+def read_parquet(
+    path: str | Path,
+    name: str | None = None,
+    engine: Literal["pandas", "polars"] = "pandas",
+    lazy: bool = False,
+) -> TableLike:
+    if engine == "polars":
+        df = pl.scan_parquet(path) if lazy else pl.read_parquet(path)
+    else:
+        if lazy:
+            raise ValueError("lazy=True is only supported with engine='polars'.")
+        df = pd.read_parquet(path)
     _register_dataset(df, path, _dataset_name(path, name))
     return df
+
+
+def scan_csv(path: str | Path, name: str | None = None) -> pl.LazyFrame:
+    return read_csv(path, name=name, engine="polars", lazy=True)  # type: ignore[return-value]
+
+
+def scan_parquet(path: str | Path, name: str | None = None) -> pl.LazyFrame:
+    return read_parquet(path, name=name, engine="polars", lazy=True)  # type: ignore[return-value]

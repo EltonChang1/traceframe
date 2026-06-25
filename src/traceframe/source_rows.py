@@ -6,6 +6,7 @@ from typing import Any
 
 import duckdb
 import pandas as pd
+import polars as pl
 
 from traceframe.project import get_traceframe_dir
 from traceframe.storage import read_json, write_json
@@ -37,10 +38,44 @@ def _json_value(value: Any) -> Any:
     return value
 
 
+def _to_pandas_sample(
+    df: pd.DataFrame | pl.DataFrame | pl.LazyFrame, limit: int
+) -> pd.DataFrame:
+    if isinstance(df, pd.DataFrame):
+        return df.head(limit).copy()
+    if isinstance(df, pl.LazyFrame):
+        return df.limit(limit).collect().to_pandas()
+    return df.head(limit).to_pandas()
+
+
+def _row_count(df: pd.DataFrame | pl.DataFrame | pl.LazyFrame) -> int | None:
+    if isinstance(df, pd.DataFrame):
+        return int(len(df))
+    if isinstance(df, pl.DataFrame):
+        return int(df.height)
+    return None
+
+
+def _columns(df: pd.DataFrame | pl.DataFrame | pl.LazyFrame) -> list[str]:
+    if isinstance(df, pl.LazyFrame):
+        return df.collect_schema().names()
+    return list(df.columns)
+
+
+def as_pandas_frame(df: pd.DataFrame | pl.DataFrame | pl.LazyFrame) -> pd.DataFrame:
+    if isinstance(df, pd.DataFrame):
+        return df
+    if isinstance(df, pl.LazyFrame):
+        return df.collect().to_pandas()
+    return df.to_pandas()
+
+
 def sample_dataframe(
-    df: pd.DataFrame, artifact_id: str, limit: int = SOURCE_ROW_LIMIT
+    df: pd.DataFrame | pl.DataFrame | pl.LazyFrame,
+    artifact_id: str,
+    limit: int = SOURCE_ROW_LIMIT,
 ) -> dict[str, Any]:
-    sample = df.head(limit).copy()
+    sample = _to_pandas_sample(df, limit)
     rows = []
     for index, row in sample.astype(object).to_dict(orient="index").items():
         rows.append(
@@ -51,10 +86,10 @@ def sample_dataframe(
         )
     payload = {
         "artifact_id": artifact_id,
-        "row_count": int(len(df)),
+        "row_count": _row_count(df),
         "sample_size": len(rows),
         "limit": limit,
-        "columns": list(df.columns),
+        "columns": _columns(df),
         "rows": rows,
     }
     write_json(_sample_path(artifact_id), payload)
@@ -114,11 +149,14 @@ def _table_name(chart_id: str) -> str:
     return f"chart_{cleaned}"
 
 
-def register_chart_drilldown(chart_id: str, data: pd.DataFrame) -> dict[str, str]:
+def register_chart_drilldown(
+    chart_id: str, data: pd.DataFrame | pl.DataFrame | pl.LazyFrame
+) -> dict[str, str]:
     db_path = _drilldown_db_path()
     table_name = _table_name(chart_id)
+    chart_data = as_pandas_frame(data)
     with duckdb.connect(str(db_path)) as conn:
-        conn.register("chart_source", data)
+        conn.register("chart_source", chart_data)
         conn.execute(
             f'CREATE OR REPLACE TABLE "{table_name}" AS SELECT * FROM chart_source'
         )

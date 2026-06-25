@@ -5,13 +5,15 @@ from typing import Any
 
 import altair as alt
 import pandas as pd
+import polars as pl
 
 from traceframe.evidence import EvidenceRecord, artifact_id, utc_now
 from traceframe.project import get_traceframe_dir
 from traceframe.runs import current_run_id, evidence_metadata
 from traceframe.source_rows import register_chart_drilldown, sample_dataframe
+from traceframe.source_rows import as_pandas_frame
 from traceframe.storage import append_record, write_json
-from traceframe.tracking import write_evidence
+from traceframe.tracking import object_artifact_id, object_name, write_evidence
 
 
 def _mark(chart_obj: alt.Chart, kind: str) -> alt.Chart:
@@ -25,7 +27,7 @@ def _mark(chart_obj: alt.Chart, kind: str) -> alt.Chart:
 
 
 def chart(
-    data: pd.DataFrame,
+    data: pd.DataFrame | pl.DataFrame | pl.LazyFrame,
     x: str,
     y: str,
     kind: str,
@@ -35,17 +37,18 @@ def chart(
     chart_name = name or title or f"{y}_by_{x}"
     chart_id = artifact_id("chart", chart_name)
     trace_dir = get_traceframe_dir()
-    source_name = data.attrs.get("traceframe_name") if hasattr(data, "attrs") else None
-    source_id = data.attrs.get("traceframe_id") if hasattr(data, "attrs") else None
+    source_name = object_name(data)
+    source_id = object_artifact_id(data)
+    chart_data = as_pandas_frame(data)
 
-    chart_obj = _mark(alt.Chart(data), kind).encode(x=x, y=y)
+    chart_obj = _mark(alt.Chart(chart_data), kind).encode(x=x, y=y)
     if title:
         chart_obj = chart_obj.properties(title=title)
     spec = chart_obj.to_dict()
     spec_path = trace_dir / "audit_logs" / f"{chart_id}_vegalite.json"
     write_json(spec_path, spec)
-    source_rows = sample_dataframe(data, chart_id)
-    drilldown = register_chart_drilldown(chart_id, data)
+    source_rows = sample_dataframe(chart_data, chart_id)
+    drilldown = register_chart_drilldown(chart_id, chart_data)
 
     record = {
         "id": chart_id,
